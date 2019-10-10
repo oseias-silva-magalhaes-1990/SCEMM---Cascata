@@ -7,8 +7,6 @@ from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import datetime, date
 
-
-#aiaiaiaiaiaai
 class BDentrada(object):
     def __init__(self):
         self.db = pymysql.connect("localhost", "root", "", "scemm")
@@ -1061,7 +1059,7 @@ class Ui_BaixaProduto(object):
         self.fontCampos.setWeight(75)
 
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
-        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(435, 170, 111, 28))
+        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(435, 140, 111, 28))#==================
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_qtd = QtWidgets.QLabel(Form)
@@ -1073,14 +1071,14 @@ class Ui_BaixaProduto(object):
         self.lineEdit_Qtd.setObjectName("Campo  Quantidade")
         self.lineEdit_Qtd.setFont(self.fontCampos)
         self.lineEdit_Qtd.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_Qtd))
+#===========================
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(40, 250,500, 146))
+        self.tabela.setColumnCount(10)  # Set dez columns
+        self.tabela.setHorizontalHeaderLabels(
+            ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Peso", "Unid", "Fabricante", "Fornecedor"])
 
-        self.campoTexto = QtWidgets.QTextEdit(Form)
-        self.campoTexto.setGeometry(QtCore.QRect(25, 170, 400, 245))
-        self.campoTexto.setObjectName("Campo Informações do Item")
-        self.campoTexto.setToolTip("Informações do Item")
-        self.campoTexto.setReadOnly(True)
-        self.campoTexto.setFont(self.fontCampos)
-
+#============================
         self.label_Item = QtWidgets.QLabel(Form)
         self.label_Item.setGeometry(QtCore.QRect(63, 70, 41, 20))
         self.label_Item.setObjectName("label_Item")
@@ -1097,14 +1095,19 @@ class Ui_BaixaProduto(object):
         self.label_Erro.setObjectName("label_Erro")
 
         self.pushButton_limpar = QtWidgets.QPushButton(Form)
-        self.pushButton_limpar.setGeometry(QtCore.QRect(435, 208, 111, 28))
+        self.pushButton_limpar.setGeometry(QtCore.QRect(435, 170, 111, 28))#===============
         self.pushButton_limpar.setObjectName("pushButton_limpar")
 
 
         self.pushButton_retirar = QtWidgets.QPushButton(Form)
-        self.pushButton_retirar.setGeometry(QtCore.QRect(435, 70, 111, 28))
+        self.pushButton_retirar.setGeometry(QtCore.QRect(435, 200, 111, 28))#===========
         self.pushButton_retirar.setObjectName("pushButton_retirar")
 
+#============
+        self.pushButton_buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_buscar.setGeometry(QtCore.QRect(435, 70, 111, 28))#===========
+        self.pushButton_buscar.setObjectName("pushButton_buscar")
+#=============
         self.radioButton_3 = QtWidgets.QRadioButton(Form)
         self.radioButton_3.setGeometry(QtCore.QRect(400, 220, 161, 20))
         self.radioButton_3.setObjectName("radioButton_3")
@@ -1125,9 +1128,11 @@ class Ui_BaixaProduto(object):
         self.label_Item.setText(_translate("Form", "Item:"))
         self.pushButton_limpar.setText(_translate("Form", "Limpar"))
         self.pushButton_retirar.setText(_translate("Form", "Retirar"))
+        self.pushButton_buscar.setText(_translate("Form", "Buscar"))#======
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.radioButton_3.setText(_translate("Form", "retirada para descarte"))
         self.radioButton_4.setText(_translate("Form", "retirada para consumo"))
+
 
 
 class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):

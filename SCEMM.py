@@ -7,7 +7,6 @@ from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import datetime, date
 
-#ola maluco
 class BDentrada(object):
     def __init__(self):
         self.db = pymysql.connect("localhost", "root", "", "scemm")

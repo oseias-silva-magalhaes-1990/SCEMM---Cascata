@@ -5,7 +5,7 @@ class Ui_CadastroPrescric(object):
         self.nomeLogado = nome
 
     def setupUi(self, Form):
-        Form.setWindowIcon(QtGui.QIcon("img\home.jpg"))
+        Form.setWindowIcon(QtGui.QIcon("img/home.jpg"))
 
         Form.setObjectName("Form")
         Form.resize(575, 275)

@@ -1126,19 +1126,23 @@ class Ui_BaixaProduto(object):
         self.label_qtd = QtWidgets.QLabel(Form)
         self.label_qtd.setGeometry(QtCore.QRect(30, 100, 71, 16))
         self.label_qtd.setObjectName("label_qtd")
+        self.label_qtd.setVisible(False)
 
         self.lineEdit_Qtd = QtWidgets.QLineEdit(Form)
         self.lineEdit_Qtd.setGeometry(QtCore.QRect(115, 102, 113, 25))
         self.lineEdit_Qtd.setObjectName("Campo  Quantidade")
         self.lineEdit_Qtd.setFont(self.fontCampos)
         self.lineEdit_Qtd.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_Qtd))
+        self.lineEdit_Qtd.setVisible(False)
+
 #===========================
         self.tabela = QtWidgets.QTableWidget(Form)
         self.tabela.setGeometry(QtCore.QRect(40, 250,500, 146))
         self.tabela.setColumnCount(10)  # Set dez columns
         self.tabela.setHorizontalHeaderLabels(
             ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Peso", "Unid", "Fabricante", "Fornecedor"])
-
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
 #============================
         self.label_Item = QtWidgets.QLabel(Form)
         self.label_Item.setGeometry(QtCore.QRect(63, 70, 41, 20))
@@ -1155,6 +1159,16 @@ class Ui_BaixaProduto(object):
         self.label_Erro.setGeometry(QtCore.QRect(30, 130, 341, 20))
         self.label_Erro.setObjectName("label_Erro")
 
+        self.label_3 = QtWidgets.QLabel(Form)
+        self.label_3.setGeometry(QtCore.QRect(530, 10, 100, 20))
+        self.label_3.setFont(self.fontLabel)
+        self.label_3.setObjectName("Total de Itens")
+
+        self.label_6 = QtWidgets.QLabel(Form)
+        self.label_6.setFont(self.fontLabel)
+        self.label_6.setGeometry(QtCore.QRect(655, 10, 100, 20))
+        self.label_6.setObjectName("Total de vencidos")
+
         self.pushButton_limpar = QtWidgets.QPushButton(Form)
         self.pushButton_limpar.setGeometry(QtCore.QRect(435, 170, 111, 28))#===============
         self.pushButton_limpar.setObjectName("pushButton_limpar")
@@ -1168,16 +1182,8 @@ class Ui_BaixaProduto(object):
         self.pushButton_buscar = QtWidgets.QPushButton(Form)
         self.pushButton_buscar.setGeometry(QtCore.QRect(435, 70, 111, 28))#===========
         self.pushButton_buscar.setObjectName("pushButton_buscar")
+        self.pushButton_buscar.clicked.connect(self.lineEdit_Nome.copy)
 #=============
-        self.radioButton_3 = QtWidgets.QRadioButton(Form)
-        self.radioButton_3.setGeometry(QtCore.QRect(400, 220, 161, 20))
-        self.radioButton_3.setObjectName("radioButton_3")
-        self.radioButton_3.setVisible(False)
-
-        self.radioButton_4 = QtWidgets.QRadioButton(Form)
-        self.radioButton_4.setGeometry(QtCore.QRect(400, 260, 161, 20))
-        self.radioButton_4.setObjectName("radioButton_4")
-        self.radioButton_4.setVisible(False)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -1191,8 +1197,6 @@ class Ui_BaixaProduto(object):
         self.pushButton_retirar.setText(_translate("Form", "Retirar"))
         self.pushButton_buscar.setText(_translate("Form", "Buscar"))#======
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
-        self.radioButton_3.setText(_translate("Form", "retirada para descarte"))
-        self.radioButton_4.setText(_translate("Form", "retirada para consumo"))
 
 
 
@@ -1207,68 +1211,130 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
         self.pushButton_MenuPrin.clicked.connect(self.telaMenuPrincipal)
         self.pushButton_retirar.clicked.connect(self.retirarItem)
         self.pushButton_limpar.clicked.connect(self.limparCampos)
+        self.pushButton_buscar.clicked.connect(self.buscaMedicamentos)
+    
+    def limparCampos(self):
+        self.label_Erro.clear()
+        self.lineEdit_Qtd.setVisible(False)
+        self.label_qtd.setVisible(False)
+        self.tabela.clear()
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.lineEdit_Nome.clear()
+        self.lineEdit_Qtd.clear()
+
+    def buscaMedicamentos(self):
+
+        loteNome=self.lineEdit_Nome.text()
+        item=Item()
+        if loteNome:
+            if item.validaLoteNomeItem(loteNome):
+                item.recuperaBDitem(loteNome)
+                item.recuperaItemBDitem(loteNome)
+
+                if item.validaLoteItem(loteNome):
+                    self.label_qtd.setVisible(True)
+                    self.lineEdit_Qtd.setVisible(True)
+
+                self.preencheTabela(item)
+                self.label_3.setText("Total: "+str(self.calculaQuantidade(item)))
+                if self.calculaVencidos(item) > 0:
+                    self.label_6.setText("Vencidos: "+str(self.calculaVencidos(item)))
+            
+                self.tabela.resizeColumnsToContents()
+                self.tabela.resizeRowsToContents()
+            else:
+                self.label_Erro.setText("Produto não encontrado")
+                self.label_Erro.setStyleSheet('QLabel {color: red}')
+        else:
+            self.limparCampos()
+
+    def preencheTabela(self, item):
+        dados = item.getItem()
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            if dados[num_linha][10] == 0 and dados[num_linha][3] > 0:  # preenche tabela se nao estiver vencido e se não estiver zerado
+                for num_coluna, dado in enumerate(linha_dado):
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+            else:
+                self.tabela.hideRow(num_linha)
+
+        for linha in range(len(dados)):#Define como vencido as datas ultrapassadas
+            vencido = "VENCIDO"
+            self.tabela.setItem(linha, 7, self.formatCell(str(dados[linha][7]).lower()))#Coluna 7 é a coluna da unidade necessária estar em minuscula
+            if dados[linha][5] < date.today():
+                self.tabela.setItem(linha, 5, self.formatCell(str(vencido)))
+            else:
+                dataVenc = dados[linha][5].strftime('%d/%m/%Y')
+                self.tabela.setItem(linha, 5, self.formatCell(dataVenc))
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(10):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+    def calculaQuantidade(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] > date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        return soma
+
+    def calculaVencidos(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] < date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        if soma > 0:
+            self.label_Erro.setText("DESPREZE OS MEDICAMENTOS VENCIDOS!")
+            self.label_Erro.setStyleSheet('QLabel {color: red}')
+        return soma
 
     def retirarItem(self):
-        self.label_Erro.clear()
-        self.campoTexto.clear()
         loteNome = self.lineEdit_Nome.text()
         qtdDigitada = self.lineEdit_Qtd.text()
-        if self.radioButton_3.isChecked():
-            descarte = True
-        else:
-            descarte = False
-
         item = Item()
-        if qtdDigitada and loteNome:
+        if loteNome and int (qtdDigitada)>0:
+            item=Item()
             item.recuperaBDitem(loteNome)
-            if item.validaLoteNomeItem(loteNome):
-                menor = item.getDataVenc()[0][0]
-                indice = 0
-                qtdEstoque = 0
-                for linha in range(len(item.getDataVenc())):
-                    #TESTAR ALTERAÇÃO DA DATA NO IF ABAIXO
-                    if int(item.getQtdItem()[linha][0]) > 0:
-                        if item.getExcluido()[linha][0] == False:
-                            if item.getDataVenc()[linha][0] > date.today():
-                                qtdEstoque = qtdEstoque + int(item.getQtdItem()[linha][0])
-                                if item.getDataVenc()[linha][0] <= menor:
-                                    menor = item.getDataVenc()[linha][0]
-                                    indice = linha
-                print(qtdEstoque)
+            
+        
+            if item.validaLoteItem(loteNome) and item.getDataVenc()[0][0]>date.today():
+                item.setLote(loteNome)
+                qtd=item.getQtdItem()[0][0]
+                decremento = int(qtd)-int(qtdDigitada)
 
-                if item.getDataVenc()[indice][0] > date.today():
-                    nome = item.getNomeItem()[indice][0]
-                    item_id = item.getItemID()[indice][0]
-                    qtdItem = item.getQtdItem()[indice][0]
-                    qtdMin = item.getQtdMinima()[indice][0]
-                    lote = item.getLote()[indice][0]
-                    print(qtdItem)
-                    decremento = int(qtdItem) - int(qtdDigitada)
-                    qtdEstoque = qtdEstoque - int(qtdDigitada)
-                    if decremento < 0:
-                        decremento = 0
-                    self.campoTexto.setText("Dados do item retirado"+"\nNome: "+str(nome) +"\nSaldo: "+str(decremento)+"\nLote: "+str(lote) +"\n\nSaldo total de "+nome+" em estoque: "+str(qtdEstoque))
+                if int (qtdDigitada)>int(item.qtdItem()[0][0]):
+                    Mensagem.msg="Valor declarado maior que o disponível"
+                    Mensagem.cor="red"
+                if decremento > int (item.qtdItem()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!"
+                    Mensagem.cor="blue"
+                if decremento > 0 and decremento < int (item.qtdItem()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!\n Quantidade minima atingida."
+                    Mensagem.cor="yellow"
+                if decremento == 0:
+                    Mensagem.msg="Retirado com sucesso!\n Não há mais saldo deste lote em estoque."
+                    Mensagem.cor="orange"
+                print("okok")
+                #item.updateQtdItem(decremento)
 
-                    if int(qtdDigitada) <= int(qtdEstoque) and decremento >= 0:
-                        item.setLote(lote)
-                        item.updateQtdItem(str(decremento))
-                        if decremento <= int(qtdMin):
-                            Mensagem.msg = "A quantidade mínima foi atingida\nreponha o estoque\nBAIXA CONCLUÍDA!"
-                            Mensagem.cor = "orange"
-                            self.switch_window_2.emit()
-                        else:
-                            Mensagem.msg = "BAIXA CONCLUÍDA!"
-                            Mensagem.cor = "blue"
-                            self.switch_window_2.emit()
-                    else:
-                        self.campoTexto.clear()
-                        self.label_Erro.setText("A quantidade de retirada é maior que a disponivel")
-                else:
-                    self.label_Erro.setText("ESTE MEDICAMENTO ESTÁ VENCIDO NO ESTOQUE!\nPRECISA SER DESCARTADO ANTES DA BAIXA!")
-            else:
-                self.label_Erro.setText("O Item não está cadastrado!")
+
+
         else:
-            self.label_Erro.setText("")
+            print("qtd digitada<0")
+            self.limparCampos()
 
 
 
@@ -1278,12 +1344,6 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
     def copiaCampos(self):
         self.lineEdit_Qtd.copy()
         self.lineEdit_Nome.copy()
-
-    def limparCampos(self):
-        self.lineEdit_Nome.clear()
-        self.lineEdit_Qtd.clear()
-        self.label_Erro.clear()
-        self.campoTexto.clear()
 
 #===========================================================================================================================
 class Ui_FormCadProdEMed(object):
@@ -1967,7 +2027,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
         self.pushButton.clicked.connect(self.TelaEditarProdEMedInfo)
         self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
         self.pushButton_3.clicked.connect(self.lineEdit.copy)
-        self.pushButton_3.clicked.connect(self.buscarMedicamento)
+        self.pushButton_3.clicked.connect(self.buscarMedicamento())
         self.pushButton_2.clicked.connect(self.limparTela)
         self.item = Item()
 

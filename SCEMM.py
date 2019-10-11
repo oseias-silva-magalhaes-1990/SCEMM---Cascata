@@ -1041,9 +1041,6 @@ class Usuario(object):
 #=======================================================================================================
 #=======================================================================================================
 
-class CadastroPrescricao(object):
-    def __init__(self,nome):
-        self.setupUi(Form)
 class CadastroPrescricao(QtWidgets.QWidget):
     
     def __init__(self):
@@ -3519,7 +3516,6 @@ class Controller:
         self.menu.show()
 
     def show_cad_presc(self):
-        
         self.cadPresc = CadastroPrescricao()
         self.cadPresc.show()
 

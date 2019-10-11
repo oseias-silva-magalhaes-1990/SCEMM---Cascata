@@ -1162,13 +1162,13 @@ class Ui_BaixaProduto(object):
         self.label_Erro.setObjectName("label_Erro")
 
         self.label_3 = QtWidgets.QLabel(Form)
-        self.label_3.setGeometry(QtCore.QRect(530, 10, 100, 20))
+        self.label_3.setGeometry(QtCore.QRect(30, 220, 341, 20))
         self.label_3.setFont(self.fontLabel)
         self.label_3.setObjectName("Total de Itens")
 
         self.label_6 = QtWidgets.QLabel(Form)
         self.label_6.setFont(self.fontLabel)
-        self.label_6.setGeometry(QtCore.QRect(655, 10, 100, 20))
+        self.label_6.setGeometry(QtCore.QRect(90,220, 341, 20))
         self.label_6.setObjectName("Total de vencidos")
 
         self.pushButton_limpar = QtWidgets.QPushButton(Form)
@@ -1225,6 +1225,8 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
         self.lineEdit_Nome.clear()
         self.lineEdit_Qtd.clear()
         self.pushButton_retirar.setVisible(False)
+        self.label_3.setVisible(False)
+        self.label_6.setVisible(False)
 
     def buscaMedicamentos(self):
 
@@ -1241,6 +1243,7 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
                     self.lineEdit_Qtd.setVisible(True)
 
                 self.preencheTabela(item)
+                self.label_3.setVisible(True)
                 self.label_3.setText("Total: "+str(self.calculaQuantidade(item)))
                 if self.calculaVencidos(item) > 0:
                     self.label_6.setText("Vencidos: "+str(self.calculaVencidos(item)))

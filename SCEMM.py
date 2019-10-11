@@ -1044,6 +1044,11 @@ class Usuario(object):
 class CadastroPrescricao(object):
     def __init__(self,nome):
         self.setupUi(Form)
+class CadastroPrescricao(QtWidgets.QWidget):
+    
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
 
     def setupUi(self, Form):
         Form.setWindowIcon(QtGui.QIcon("img/home.jpg"))
@@ -3515,6 +3520,8 @@ class Controller:
 
     def show_cad_presc(self):
         
+        self.cadPresc = CadastroPrescricao()
+        self.cadPresc.show()
 
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()

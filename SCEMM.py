@@ -595,7 +595,7 @@ class Item(object):
         return self.nomeFabricante
 
     def getPesoItem(self):
-        return self.peso
+        return self.pesof
 
     def getUnidadeItem(self):
         return self.unidade
@@ -1085,7 +1085,7 @@ class CadastroPrescricao(object):
         self.pushButton_3.setObjectName("pushButton_3")
         self.label_9 = QtWidgets.QLabel(Form)
         self.label_9.setGeometry(QtCore.QRect(40, 150, 401, 91))
-        self.label_9.setObjectName("label_9")
+        self.label_9.setObjectName("LabelErro")
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -1099,7 +1099,6 @@ class CadastroPrescricao(object):
         self.label_5.setText(_translate("Form", "Nome medicamento:"))
         self.pushButton_2.setText(_translate("Form", "Cadastrar"))
         self.pushButton_3.setText(_translate("Form", "Limpar"))
-        self.label_9.setText(_translate("Form", "TextLabel"))
 
 #=======================================================================================================
 #=======================================================================================================
@@ -3256,6 +3255,7 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
     switch_window_5 = QtCore.pyqtSignal()
     switch_window_6 = QtCore.pyqtSignal()
     switch_window_7 = QtCore.pyqtSignal()
+    switch_window_8 = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -3268,6 +3268,7 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_CadPac.clicked.connect(self.telaCadastroPaciente)
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
+
 
     def telaBaixaItem(self):
         self.switch_window_7.emit()

@@ -1179,6 +1179,7 @@ class Ui_BaixaProduto(object):
         self.pushButton_retirar = QtWidgets.QPushButton(Form)
         self.pushButton_retirar.setGeometry(QtCore.QRect(435, 200, 111, 28))#===========
         self.pushButton_retirar.setObjectName("pushButton_retirar")
+        self.pushButton_retirar.setVisible(False)
 
 #============
         self.pushButton_buscar = QtWidgets.QPushButton(Form)
@@ -1223,6 +1224,7 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
         self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.lineEdit_Nome.clear()
         self.lineEdit_Qtd.clear()
+        self.pushButton_retirar.setVisible(False)
 
     def buscaMedicamentos(self):
 
@@ -1234,6 +1236,7 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
                 item.recuperaItemBDitem(loteNome)
 
                 if item.validaLoteItem(loteNome):
+                    self.pushButton_retirar.setVisible(True)
                     self.label_qtd.setVisible(True)
                     self.lineEdit_Qtd.setVisible(True)
 
@@ -1309,30 +1312,30 @@ class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
         item = Item()
         if loteNome and int (qtdDigitada)>0:
             item=Item()
-            item.recuperaBDitem(loteNome)
-            
+            item.recuperaBDitem(loteNome)            
         
-            if item.validaLoteItem(loteNome) and item.getDataVenc()[0][0]>date.today():
+            if item.validaLoteItem(loteNome):
                 item.setLote(loteNome)
                 qtd=item.getQtdItem()[0][0]
                 decremento = int(qtd)-int(qtdDigitada)
-
-                if int (qtdDigitada)>int(item.qtdItem()[0][0]):
+                qtdDigitada=int (qtdDigitada)
+                
+                if int(qtdDigitada) > int(item.getQtdItem()[0][0]):
                     Mensagem.msg="Valor declarado maior que o disponível"
                     Mensagem.cor="red"
-                if decremento > int (item.qtdItem()[0][0]):
+                if decremento > int (item.getQtdMinima()[0][0]):
                     Mensagem.msg="Retirado com sucesso!"
                     Mensagem.cor="blue"
-                if decremento > 0 and decremento < int (item.qtdItem()[0][0]):
+                if decremento > 0 and decremento < int (item.getQtdMinima()[0][0]):
                     Mensagem.msg="Retirado com sucesso!\n Quantidade minima atingida."
-                    Mensagem.cor="yellow"
+                    Mensagem.cor="gold"
                 if decremento == 0:
                     Mensagem.msg="Retirado com sucesso!\n Não há mais saldo deste lote em estoque."
                     Mensagem.cor="orange"
-                print("okok")
-                #item.updateQtdItem(decremento)
 
-
+                self.switch_window_2.emit()
+                item.updateQtdItem(decremento)
+                self.limparCampos()
 
         else:
             print("qtd digitada<0")

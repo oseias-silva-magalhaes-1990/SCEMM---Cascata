@@ -1116,6 +1116,12 @@ class Ui_BaixaProduto(object):
         self.fontLabel.setBold(True)
         self.fontLabel.setWeight(75)
 
+        self.fontLabel1 = QtGui.QFont()
+        self.fontLabel1.setFamily("Arial")
+        self.fontLabel1.setPointSize(9)
+        self.fontLabel1.setBold(True)
+        self.fontLabel1.setWeight(75)
+
         self.fontCampos = QtGui.QFont()
         self.fontCampos.setFamily("Perpetua Titling MT")
         self.fontCampos.setPointSize(9)
@@ -1158,8 +1164,9 @@ class Ui_BaixaProduto(object):
         self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9]+"), self.lineEdit_Nome))
 
         self.label_Erro = QtWidgets.QLabel(Form)
-        self.label_Erro.setGeometry(QtCore.QRect(30, 130, 341, 20))
+        self.label_Erro.setGeometry(QtCore.QRect(30, 130, 340, 20))
         self.label_Erro.setObjectName("label_Erro")
+        self.label_Erro.setFont(self.fontLabel1)
 
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setGeometry(QtCore.QRect(30, 220, 341, 20))
@@ -1168,7 +1175,7 @@ class Ui_BaixaProduto(object):
 
         self.label_6 = QtWidgets.QLabel(Form)
         self.label_6.setFont(self.fontLabel)
-        self.label_6.setGeometry(QtCore.QRect(90,220, 341, 20))
+        self.label_6.setGeometry(QtCore.QRect(150,220, 341, 20))
         self.label_6.setObjectName("Total de vencidos")
 
         self.pushButton_limpar = QtWidgets.QPushButton(Form)
@@ -3192,6 +3199,11 @@ class Ui_FormMenuPrincipal(object):
         self.imagem.setScaledContents(True)
         self.imagem.setGeometry(320,10,230,140)
         self.imagem.setToolTip("Associação de Atendimento das Portadoras\nde Necessidades Especiais Nossa Senhora de Lourdes")
+        
+        self.pushButton_Sair = QtWidgets.QPushButton(Form)
+        self.pushButton_Sair.setGeometry(QtCore.QRect(200, 12, 60, 28))
+        self.pushButton_Sair.setObjectName("Sair")
+        self.pushButton_Sair.setToolTip("Realizar LogOut")
 
 
         self.fontLabel = QtGui.QFont()
@@ -3311,6 +3323,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_EditUsu.setText(_translate("Form", "Editar Usuário"))
         self.pushButton_CadUsu.setText(_translate("Form", "Cadastro Usuário"))
         self.pushButton_ExcRecUsu.setText(_translate("Form", "Excluir/Recuperar Usuário"))
+        self.pushButton_Sair.setText(_translate("Form","Sair"))
 
 
 class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
@@ -3324,6 +3337,7 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
     switch_window_6 = QtCore.pyqtSignal()
     switch_window_7 = QtCore.pyqtSignal()
     switch_window_8 = QtCore.pyqtSignal()
+    switch_window_9 = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -3337,6 +3351,10 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
         self.pushButton_CadPresc.clicked.connect(self.telaCadastraPrescricao)
+        self.pushButton_Sair.clicked.connect(self.telaLogin)
+
+    def telaLogin(self):
+        self.switch_window_9.emit()
 
     def telaCadastraPrescricao(self):
         self.switch_window_8.emit()
@@ -3507,6 +3525,13 @@ class Controller:
         self.login.switch_window.connect(self.show_main)
         self.login.show()
 
+    def fechar_menu(self):
+        print("ok")
+        app=sys.executable
+        print("okok")
+        os.execl(app,app, *sys.argv)
+        print("okokok")
+
     def show_main(self):
         self.menu = MenuPrincipal()
         self.menu.switch_window.connect(self.show_cad_item)#Botao Cadastrar Produto e Medicamento
@@ -3518,6 +3543,7 @@ class Controller:
         self.menu.switch_window_6.connect(self.show_edit_pac)
         self.menu.switch_window_7.connect(self.show_baixa_item)
         self.menu.switch_window_8.connect(self.show_cad_presc)
+        self.menu.switch_window_9.connect(self.fechar_menu)
         self.login.close()
         self.menu.show()
 

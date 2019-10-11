@@ -3328,6 +3328,10 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_CadPac.clicked.connect(self.telaCadastroPaciente)
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
+        self.pushButton_CadPresc.clicked.connect(self.telaCadastraPrescricao)
+
+    def telaCadastraPrescricao(self):
+        self.switch_window_8.emit()
 
 
     def telaBaixaItem(self):
@@ -3505,8 +3509,12 @@ class Controller:
         self.menu.switch_window_5.connect(self.show_cad_pac)
         self.menu.switch_window_6.connect(self.show_edit_pac)
         self.menu.switch_window_7.connect(self.show_baixa_item)
+        self.menu.switch_window_8.connect(self.show_cad_presc)
         self.login.close()
         self.menu.show()
+
+    def show_cad_presc(self):
+        
 
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()

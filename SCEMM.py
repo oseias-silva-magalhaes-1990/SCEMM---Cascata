@@ -7,6 +7,32 @@ from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import datetime, date
 
+class BDprescricao(object):
+    def __init__(self):
+        self.db = pymysql.connect("localhost", "root", "", "scemm")
+        self.cursor = self.db.cursor()
+
+    def gravaPrescricaoBD(self, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):#Definidos como Não nulos no banco
+        dados = (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id)
+        self.cursor.execute("INSERT INTO prescricao (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id) VALUES (%s, %s, %s, %s, %s)", dados)
+        self.db.commit()
+        self.db.close()
+
+    def existePrescricao(self, paciente_id, nomeItem):
+        dados = (paciente_id, nomeItem)
+        self.cursor.execute("SELECT paciente_id FROM prescricao WHERE paciente_id = %s AND nomeItem = %s", dados)
+        paciente_id = self.cursor.fetchall()
+        if not paciente_id:
+            return False
+        else:
+            return True
+
+    def atualizaPrescricaoBD(self, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
+        dados = (qtdAdm, fazUso, usuario_id, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET qtdAdm = %s, fazUso = %s, usuario_id = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        self.db.commit()
+        self.db.close()
+
 class BDentrada(object):
     def __init__(self):
         self.db = pymysql.connect("localhost", "root", "", "scemm")
@@ -287,6 +313,12 @@ class BDpaciente(object):
         data_nasc = self.cursor.fetchone()
         self.db.close()
         return data_nasc
+
+    def recuperaIDpaciente(self, cpf):
+        self.cursor.execute("SELECT paciente_id FROM paciente WHERE cpf = %s", cpf)
+        pac_id = self.cursor.fetchone()
+        self.db.close()
+        return pac_id
 #=====================================================================================
 class BDusuario(object):
 
@@ -346,6 +378,11 @@ class BDusuario(object):
 
     def recuperaNomeEadmin(self):  # retorna vetor com o(s) nome(s) do(s) administrador(es)
         self.cursor.execute("SELECT nome FROM usuario WHERE eadmin = 1")
+        dado = self.cursor.fetchall()
+        return dado
+
+    def recuperaTodosUsuarios(self, nome):
+        self.cursor.execute("SELECT * FROM usuario WHERE nome = %s",nome)
         dado = self.cursor.fetchall()
         return dado
 
@@ -436,6 +473,7 @@ class Usuario(object):
         self.senha = ""
         self.excluido = ""
         self.idUsu = ""
+        self.usuario = None
 
     def setNomeUsuario(self,nomeUsu):
         self.nome = nomeUsu
@@ -473,6 +511,7 @@ class Usuario(object):
         self.senha = senha
         bdUsu = BDusuario()
         if bdUsu.verificaSenhaUsuario(self.nome, self.senha):
+            self.recuperaBDUsuario(self.nome)
             bdUsu.db.close()
             return True
         else:
@@ -532,6 +571,7 @@ class Usuario(object):
         bdUsu = BDusuario()
         bdUsu.restauraBDusuario(self.nome)
         bdUsu.db.close()
+
 
     def recuperaIDusuario(self, nomeUsu):
         bdUsu = BDusuario()
@@ -759,6 +799,7 @@ class Paciente(object):
         self.rg = ""
         self.data_nasc = ""
         self.pac = ""
+        self.paciente_id = ""
 
     def setNomePaciente(self,nomePaciente):
         self.nome = nomePaciente
@@ -793,6 +834,9 @@ class Paciente(object):
 
     def getPaciente(self):
         return self.pac
+
+    def getIDpac(self):
+        return self.paciente_id
 
 #=============================================================
     def cpfCorreto(self):
@@ -832,13 +876,14 @@ class Paciente(object):
         else:
             return False
 
-    def recuperaBDpacVar(self, cpf):
+    def recuperaBDpacAtr(self, cpf):
         dbPac = BDpaciente()
         self.nome = dbPac.recuperaNome(cpf)
         self.sobrenome = dbPac.recuperaSobrenome(cpf)
         self.cpf = dbPac.recuperaCPF(cpf)
         self.rg = dbPac.recuperaRG(cpf)
         self.data_nasc = dbPac.recuperaDataNasc(cpf)
+        self.paciente_id = dbPac.recuperaIDpaciente(cpf)
 
 
 #============================================================================================================
@@ -846,15 +891,11 @@ class Prescricao(object):
     cpf_paciente = ""
 
     def __init__(self):
-        self.PeriodoAdm = ""
         self.FazUso = ""
         self.qtdAdmin = ""
-        self.id_item = ""
+        self.nomeItem = ""
         self.id_usuario = ""
         self.id_Paciente = ""
-
-    def setPeriodoAdm(self,PeriodoAdm):
-        self.PeriodoAdm = PeriodoAdm
 
     def setFazUso (self,FazUso):
         self.FazUso = FazUso
@@ -862,8 +903,8 @@ class Prescricao(object):
     def setQtdAdm(self, QtdAdm):
         self.qtdAdmin = QtdAdm
 
-    def setIdItem(self, idItem):
-        self.id_item = idItem
+    def setNomeItem(self, nomeItem):
+        self.nomeItem = nomeItem
 
     def setIdUsuario(self, idUsuario):
         self.id_usuario = idUsuario
@@ -884,12 +925,20 @@ class Prescricao(object):
     def getIdUsuario(self):
         return self.id_usuario
 
-    def getIdItem(self):
-        return self.id_item
+    def getNomeItem(self):
+        return self.nomeItem
 
     def getIdPaciente(self):
         return self.id_Paciente
 #=============================================================
+
+    def gravaBDprescricao(self):
+        dbPresc = BDprescricao()
+        if dbPresc.existePrescricao(self.id_Paciente, self.nomeItem):
+
+            dbPresc.atualizaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        else:
+            dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
 
 #===================================================================================================================
 class Saida(object):
@@ -1041,7 +1090,7 @@ class Usuario(object):
 #=======================================================================================================
 #=======================================================================================================
 
-class CadastroPrescricao(QtWidgets.QWidget):
+class TelaPrescricao(QtWidgets.QWidget):
     cont = 0
 
     def __init__(self):
@@ -1067,18 +1116,24 @@ class CadastroPrescricao(QtWidgets.QWidget):
         self.label_Paciente = QtWidgets.QLabel(Form)
         self.label_Paciente.setGeometry(QtCore.QRect(20, 30, 55, 16))
         self.label_Paciente.setObjectName("label_Paciente")
-        self.line_nomePac = QtWidgets.QLineEdit(Form)
-        self.line_nomePac.setGeometry(QtCore.QRect(70, 30, 301, 22))
-        self.line_nomePac.setObjectName("line_nomePac")
-        self.pushButton_Cadastrar = QtWidgets.QPushButton(Form)
-        self.pushButton_Cadastrar.setGeometry(QtCore.QRect(460, 180, 93, 28))
-        self.pushButton_Cadastrar.setObjectName("pushButton_Cadastrar")
+        self.line_cpfPac = QtWidgets.QLineEdit(Form)
+        self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
+        self.line_cpfPac.setObjectName("line_cpfPac")
+        self.pushButton_Salvar = QtWidgets.QPushButton(Form)
+        self.pushButton_Salvar.setGeometry(QtCore.QRect(460, 180, 93, 28))
+        self.pushButton_Salvar.setObjectName("pushButton_Salvar")
+
+        self.pushButton_Buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
+        self.pushButton_Buscar.setObjectName("pushButton_Buscar")
+
         self.pushButton_Limpar = QtWidgets.QPushButton(Form)
-        self.pushButton_Limpar.setGeometry(QtCore.QRect(460, 140, 93, 28))
+        self.pushButton_Limpar.setGeometry(QtCore.QRect(460, 142, 93, 28))
         self.pushButton_Limpar.setObjectName("pushButton_Limpar")
+
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setFont(self.fontLabel)
-        self.label_Erro.setGeometry(QtCore.QRect(70, 55, 301, 21))
+        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
         self.scrollArea = QtWidgets.QScrollArea(Form)
@@ -1421,74 +1476,16 @@ class CadastroPrescricao(QtWidgets.QWidget):
         self.line_med1_14.setPlaceholderText("M 14")
         self.line_med1_15.setPlaceholderText("M 15")
 
-        self.pushButton_Cadastrar.clicked.connect(self.cadastrar)
-
 
         self.retranslateUi(Form)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_2.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_3.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_4.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_5.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_6.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_7.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_8.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_9.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_10.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_11.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_12.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_13.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_14.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_med1_15.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_2.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_3.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_4.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_5.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_6.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_7.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_8.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_9.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_10.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_11.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_12.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_13.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_14.copy)
-        self.pushButton_Cadastrar.clicked.connect(self.line_qtd1_15.copy)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_15.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_14.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_13.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_12.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_11.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_10.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_9.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_8.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_7.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_6.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_5.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_4.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_3.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_15.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_14.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_13.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_12.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_11.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_10.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_9.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_8.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_7.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_6.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_5.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_4.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_3.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1_2.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_med1.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_qtd1_2.clear)
-        self.pushButton_Limpar.clicked.connect(self.line_nomePac.clear)
-        self.pushButton_Cadastrar.clicked.connect(self.line_nomePac.copy)
+
+        self.pushButton_Salvar.clicked.connect(self.copiarCampos)
+        self.pushButton_Salvar.clicked.connect(self.salvarPrescricao)
+        self.pushButton_Limpar.clicked.connect(self.limparCampos)
+        self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
+
         QtCore.QMetaObject.connectSlotsByName(Form)
-        Form.setTabOrder(self.line_nomePac, self.line_med1)
+        Form.setTabOrder(self.line_cpfPac, self.line_med1)
         Form.setTabOrder(self.line_med1, self.line_qtd1)
         Form.setTabOrder(self.line_qtd1, self.checkBox)
         Form.setTabOrder(self.checkBox, self.line_med1_2)
@@ -1535,8 +1532,8 @@ class CadastroPrescricao(QtWidgets.QWidget):
         Form.setTabOrder(self.line_qtd1_15, self.checkBox_15)
         Form.setTabOrder(self.checkBox_15, self.pushButton_MenuPrin)
         Form.setTabOrder(self.pushButton_MenuPrin, self.pushButton_Limpar)
-        Form.setTabOrder(self.pushButton_Limpar, self.pushButton_Cadastrar)
-        Form.setTabOrder(self.pushButton_Cadastrar, self.pushButton)
+        Form.setTabOrder(self.pushButton_Limpar, self.pushButton_Salvar)
+        Form.setTabOrder(self.pushButton_Salvar, self.pushButton)
         Form.setTabOrder(self.pushButton, self.scrollArea)
 
     def retranslateUi(self, Form):
@@ -1547,10 +1544,13 @@ class CadastroPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
         self.label_Paciente.setText(_translate("Form", "Paciente: "))
-        self.line_nomePac.setToolTip(_translate("Form", "Digite o nome da paciente"))
-        self.pushButton_Cadastrar.setToolTip(_translate("Form", "Cadastra a prescrição do paciente"))
-        self.pushButton_Cadastrar.setText(_translate("Form", "Cadastrar"))
-        self.pushButton_Cadastrar.setShortcut(_translate("Form", "Ctrl+Return"))
+        self.line_cpfPac.setToolTip(_translate("Form", "Digite o cpf da paciente"))
+        self.pushButton_Salvar.setToolTip(_translate("Form", "Salva a prescrição do paciente"))
+        self.pushButton_Salvar.setText(_translate("Form", "Salvar"))
+        self.pushButton_Salvar.setShortcut(_translate("Form", "Ctrl+S"))
+        self.pushButton_Buscar.setToolTip(_translate("Form", "Busca a prescrição do paciente"))
+        self.pushButton_Buscar.setText(_translate("Form", "Buscar"))
+        self.pushButton_Buscar.setShortcut(_translate("Form", "Return"))
         self.pushButton_Limpar.setToolTip(_translate("Form", "Limpa os campos digitados"))
         self.pushButton_Limpar.setText(_translate("Form", "Limpar"))
         self.pushButton_Limpar.setShortcut(_translate("Form", "Ctrl+Del"))
@@ -1594,6 +1594,73 @@ class CadastroPrescricao(QtWidgets.QWidget):
         self.label_Quantidade.setText(_translate("Form", "Qtd diária:"))
         self.label_FazUso.setText(_translate("Form", "Faz Uso?"))
 
+    def copiarCampos(self):
+        self.line_med1.copy()
+        self.line_med1_2.copy()
+        self.line_med1_3.copy()
+        self.line_med1_4.copy()
+        self.line_med1_5.copy()
+        self.line_med1_6.copy()
+        self.line_med1_7.copy()
+        self.line_med1_8.copy()
+        self.line_med1_9.copy()
+        self.line_med1_10.copy()
+        self.line_med1_11.copy()
+        self.line_med1_12.copy()
+        self.line_med1_13.copy()
+        self.line_med1_14.copy()
+        self.line_med1_15.copy()
+        self.line_qtd1.copy()
+        self.line_qtd1_2.copy()
+        self.line_qtd1_3.copy()
+        self.line_qtd1_4.copy()
+        self.line_qtd1_5.copy()
+        self.line_qtd1_6.copy()
+        self.line_qtd1_7.copy()
+        self.line_qtd1_8.copy()
+        self.line_qtd1_9.copy()
+        self.line_qtd1_10.copy()
+        self.line_qtd1_11.copy()
+        self.line_qtd1_12.copy()
+        self.line_qtd1_13.copy()
+        self.line_qtd1_14.copy()
+        self.line_qtd1_15.copy()
+        self.line_cpfPac.copy()
+
+    def limparCampos(self):
+        self.line_med1_15.clear()
+        self.line_med1_14.clear()
+        self.line_med1_13.clear()
+        self.line_med1_12.clear()
+        self.line_med1_11.clear()
+        self.line_med1_10.clear()
+        self.line_med1_9.clear()
+        self.line_med1_8.clear()
+        self.line_med1_7.clear()
+        self.line_med1_6.clear()
+        self.line_med1_5.clear()
+        self.line_med1_4.clear()
+        self.line_med1_3.clear()
+        self.line_qtd1_15.clear()
+        self.line_qtd1_14.clear()
+        self.line_qtd1_13.clear()
+        self.line_qtd1_12.clear()
+        self.line_qtd1_11.clear()
+        self.line_qtd1_10.clear()
+        self.line_qtd1_9.clear()
+        self.line_qtd1_8.clear()
+        self.line_qtd1_7.clear()
+        self.line_qtd1_6.clear()
+        self.line_qtd1_5.clear()
+        self.line_qtd1_4.clear()
+        self.line_qtd1_3.clear()
+        self.line_med1_2.clear()
+        self.line_med1.clear()
+        self.line_qtd1.clear()
+        self.line_qtd1_2.clear()
+        self.line_cpfPac.clear()
+        self.label_Erro.clear()
+
 
     def maisCampos(self):
         if self.cont == 0:
@@ -1627,53 +1694,128 @@ class CadastroPrescricao(QtWidgets.QWidget):
             self.cont = self.cont+1
             return None
 
-    def lerMedicamentos(self):
-        if self.line_med1.text() != '': 
-            self.vetMed.append(self.line_med1.text())
+    def lerSeqCampos(self):
+        if self.line_med1.text() != '':
+            if self.checkBox.isChecked():
+                vet = (self.line_med1.text(), self.line_qtd1.text(), 1)
+            else:
+                vet = (self.line_med1.text(), self.line_qtd1.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_2.text() != '': 
-            self.vetMed.append(self.line_med1_2.text())
+            if self.checkBox_2.isChecked():
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), 1)
+            else:
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_3.text() != '': 
-            self.vetMed.append(self.line_med1_3.text())
+            if self.checkBox_3.isChecked():
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), 1)
+            else:
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_4.text() != '': 
-            self.vetMed.append(self.line_med1_4.text())
+            if self.checkBox_4.isChecked():
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), 1)
+            else:
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_5.text() != '': 
-            self.vetMed.append(self.line_med1_5.text())
+            if self.checkBox_5.isChecked():
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), 1)
+            else:
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_6.text() != '': 
-            self.vetMed.append(self.line_med1_6.text())
+            if self.checkBox_6.isChecked():
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), 1)
+            else:
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_7.text() != '': 
-            self.vetMed.append(self.line_med1_7.text())
+            if self.checkBox_7.isChecked():
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), 1)
+            else:
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_8.text() != '': 
-            self.vetMed.append(self.line_med1_8.text())
+            if self.checkBox_8.isChecked():
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), 1)
+            else:
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_9.text() != '': 
-            self.vetMed.append(self.line_med1_9.text())
+            if self.checkBox_9.isChecked():
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), 1)
+            else:
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_10.text() != '': 
-            self.vetMed.append(self.line_med1_10.text())
+            if self.checkBox_10.isChecked():
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), 1)
+            else:
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_11.text() != '': 
-            self.vetMed.append(self.line_med1_11.text())
+            if self.checkBox_11.isChecked():
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), 1)
+            else:
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_12.text() != '': 
-            self.vetMed.append(self.line_med1_12.text())
+            if self.checkBox_12.isChecked():
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), 1)
+            else:
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_13.text() != '': 
-            self.vetMed.append(self.line_med1_13.text())
+            if self.checkBox_13.isChecked():
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), 1)
+            else:
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_14.text() != '': 
-            self.vetMed.append(self.line_med1_14.text())
+            if self.checkBox_14.isChecked():
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), 1)
+            else:
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), 0)
+            self.vetMed.append(vet)
         if self.line_med1_15.text() != '': 
-            self.vetMed.append(self.line_med1_15.text())
-
-    def validarMEdicamentos(self):
-        item = Item()
-        for indice in range(len(self.vetMed)):
-            print(self.vetMed[indice])
-            print(item.validaLoteNomeItem(self.vetMed[indice]))
+            if self.checkBox_15.isChecked():
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), 1)
+            else:
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), 0)
+            self.vetMed.append(vet)
 
 
-    def cadastrar(self):
+    def salvarPrescricao(self):
         self.vetMed = []
         paciente = Paciente()
-        if paciente.validaCPFnome(self.line_nomePac.text()):
-            self.lerMedicamentos()
-            self.validarMEdicamentos()
+        usuario = Usuario()
+        prescricao = Prescricao()
+        item = Item()
+        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            self.lerSeqCampos()
+            item = Item()
+            medicamentoInvalido = None
+            for indice in range(len(self.vetMed)):
+                if not item.validaLoteNomeItem(self.vetMed[indice][0]):
+                    medicamentoInvalido = indice
+            if not medicamentoInvalido:
+                paciente.recuperaBDpaciente(self.line_cpfPac.text())
+
+                prescricao.setIdPaciente(paciente.pac[0][0])
+                prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                for indice in range(len(self.vetMed)):
+                    prescricao.setNomeItem(self.vetMed[indice][0])
+                    prescricao.setQtdAdm(self.vetMed[indice][1])
+                    prescricao.setFazUso(self.vetMed[indice][2])
+                    prescricao.gravaBDprescricao()
+
+            else:
+                self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido].upper()+" não está cadastrado!")
+
         else:
-            if self.line_nomePac.text() != '':
+            if self.line_cpfPac.text() != '':
                 self.label_Erro.setText("Paciente não cadastrado")
         
 #=======================================================================================================
@@ -3163,7 +3305,7 @@ class EditarPaciente(QtWidgets.QWidget):
 class UI_Form_EditarPacienteInfo(object):
     def setupUi(self, Form):
         paciente = Paciente()
-        paciente.recuperaBDpacVar(EditarPacienteInfo.cpf)
+        paciente.recuperaBDpacAtr(EditarPacienteInfo.cpf)
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
         Form.setObjectName("Form")
         Form.setFixedSize(582, 228)
@@ -3924,13 +4066,13 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_CadPac.clicked.connect(self.telaCadastroPaciente)
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
-        self.pushButton_CadPresc.clicked.connect(self.telaCadastraPrescricao)
+        self.pushButton_CadPresc.clicked.connect(self.telaPrescricao)
         self.pushButton_Sair.clicked.connect(self.telaLogin)
 
     def telaLogin(self):
         self.switch_window_9.emit()
 
-    def telaCadastraPrescricao(self):
+    def telaPrescricao(self):
         self.switch_window_8.emit()
 
 
@@ -4045,6 +4187,7 @@ class Ui_FormLogin(object):
         self.label_1.setText(_translate("MainWindow", "Nome:"))
         self.label_2.setText(_translate("MainWindow", "Senha:"))
         self.btEntrar.setText(_translate("MainWindow", "Entrar"))
+        self.btEntrar.setShortcut(_translate("Form", "Return"))
         self.label_error.setText(_translate("MainWindow", ""))
 
 #============================================================================================
@@ -4122,7 +4265,7 @@ class Controller:
         self.menu.show()
 
     def show_cad_presc(self):
-        self.cadPresc = CadastroPrescricao()
+        self.cadPresc = TelaPrescricao()
         self.cadPresc.show()
 
     def show_baixa_item(self):

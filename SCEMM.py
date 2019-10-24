@@ -18,6 +18,11 @@ class BDprescricao(object):
         self.db.commit()
         self.db.close()
 
+    def apagaPrescricaoAntiga(self, paciente_id):
+    	self.cursor.execute("DELETE FROM prescricao WHERE paciente_id = %s", paciente_id)
+    	self.db.commit()
+
+
     def existePrescricao(self, paciente_id, nomeItem):
         dados = (paciente_id, nomeItem)
         self.cursor.execute("SELECT paciente_id FROM prescricao WHERE paciente_id = %s AND nomeItem = %s", dados)
@@ -32,6 +37,11 @@ class BDprescricao(object):
         self.cursor.execute("UPDATE prescricao SET qtdAdm = %s, fazUso = %s, usuario_id = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
         self.db.commit()
         self.db.close()
+
+    def recuperaPrescPaciente(self, paciente_id):
+    	self.cursor.execute("SELECT * FROM prescricao WHERE paciente_id = %s", paciente_id)
+    	return self.cursor.fetchall()
+    	self.db.commit()
 
 class BDentrada(object):
     def __init__(self):
@@ -896,6 +906,7 @@ class Prescricao(object):
         self.nomeItem = ""
         self.id_usuario = ""
         self.id_Paciente = ""
+        self.prescricao = ""
 
     def setFazUso (self,FazUso):
         self.FazUso = FazUso
@@ -930,15 +941,24 @@ class Prescricao(object):
 
     def getIdPaciente(self):
         return self.id_Paciente
+
+    def getPrescricao(self):
+    	return self.prescricao
 #=============================================================
 
     def gravaBDprescricao(self):
         dbPresc = BDprescricao()
         if dbPresc.existePrescricao(self.id_Paciente, self.nomeItem):
-
-            dbPresc.atualizaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        	dbPresc.apagaPrescricaoAntiga(self.id_Paciente)
+        	dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
         else:
             dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+
+    def recuperaBDprescricao(self):
+    	dbPresc = BDprescricao()
+    	self.prescricao = dbPresc.recuperaPrescPaciente(self.id_Paciente)
+
+
 
 #===================================================================================================================
 class Saida(object):
@@ -1483,6 +1503,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_Salvar.clicked.connect(self.salvarPrescricao)
         self.pushButton_Limpar.clicked.connect(self.limparCampos)
         self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
+        self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
 
         QtCore.QMetaObject.connectSlotsByName(Form)
         Form.setTabOrder(self.line_cpfPac, self.line_med1)
@@ -1658,8 +1679,22 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1.clear()
         self.line_qtd1.clear()
         self.line_qtd1_2.clear()
-        self.line_cpfPac.clear()
         self.label_Erro.clear()
+        self.checkBox.setChecked(False)
+        self.checkBox_2.setChecked(False)
+        self.checkBox_3.setChecked(False)
+        self.checkBox_4.setChecked(False)
+        self.checkBox_5.setChecked(False)
+        self.checkBox_6.setChecked(False)
+        self.checkBox_7.setChecked(False)
+        self.checkBox_8.setChecked(False)
+        self.checkBox_9.setChecked(False)
+        self.checkBox_10.setChecked(False)
+        self.checkBox_11.setChecked(False)
+        self.checkBox_12.setChecked(False)
+        self.checkBox_13.setChecked(False)
+        self.checkBox_14.setChecked(False)
+        self.checkBox_15.setChecked(False)
 
 
     def maisCampos(self):
@@ -1786,6 +1821,97 @@ class TelaPrescricao(QtWidgets.QWidget):
                 vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), 0)
             self.vetMed.append(vet)
 
+    def preencheCampos(self, prescricao):
+    	self.limparCampos()
+    	if len(prescricao)>0:
+    		self.line_med1.setText(prescricao[0][1])
+    		self.line_qtd1.setText(str(prescricao[0][2]))
+    		if prescricao[0][3] == 1:
+    			self.checkBox.setChecked(True)
+
+    	if len(prescricao)>1:
+    		self.line_med1_2.setText(prescricao[1][1])
+    		self.line_qtd1_2.setText(str(prescricao[1][2]))
+    		if prescricao[1][3] == 1:
+    			self.checkBox_2.setChecked(True)
+
+    	if len(prescricao)>2:
+    		self.line_med1_3.setText(prescricao[2][1])
+    		self.line_qtd1_3.setText(str(prescricao[2][2]))
+    		if prescricao[2][3] == 1:
+    			self.checkBox_3.setChecked(True)
+
+    	if len(prescricao)>3:
+    		self.line_med1_4.setText(prescricao[3][1])
+    		self.line_qtd1_4.setText(str(prescricao[3][2]))
+    		if prescricao[3][3] == 1:
+    			self.checkBox_4.setChecked(True)
+
+    	if len(prescricao)>4:
+    		self.line_med1_5.setText(prescricao[4][1])
+    		self.line_qtd1_5.setText(str(prescricao[4][2]))
+    		if prescricao[4][3] == 1:
+    			self.checkBox_5.setChecked(True)
+
+    	if len(prescricao)>5:
+    		self.line_med1_6.setText(prescricao[5][1])
+    		self.line_qtd1_6.setText(str(prescricao[5][2]))
+    		if prescricao[5][3] == 1:
+    			self.checkBox_6.setChecked(True)
+
+    	if len(prescricao)>6:
+    		self.line_med1_7.setText(prescricao[6][1])
+    		self.line_qtd1_7.setText(str(prescricao[6][2]))
+    		if prescricao[6][3] == 1:
+    			self.checkBox_7.setChecked(True)
+
+    	if len(prescricao)>7:
+    		self.line_med1_8.setText(prescricao[7][1])
+    		self.line_qtd1_8.setText(str(prescricao[7][2]))
+    		if prescricao[7][3] == 1:
+    			self.checkBox_8.setChecked(True)
+
+    	if len(prescricao)>8:
+    		self.line_med1_9.setText(prescricao[8][1])
+    		self.line_qtd1_9.setText(str(prescricao[8][2]))
+    		if prescricao[8][3] == 1:
+    			self.checkBox_9.setChecked(True)
+
+    	if len(prescricao)>9:
+    		self.line_med1_10.setText(prescricao[9][1])
+    		self.line_qtd1_10.setText(str(prescricao[9][2]))
+    		if prescricao[9][3] == 1:
+    			self.checkBox_10.setChecked(True)
+
+    	if len(prescricao)>10:
+    		self.line_med1_11.setText(prescricao[10][1])
+    		self.line_qtd1_11.setText(str(prescricao[10][2]))
+    		if prescricao[10][3] == 1:
+    			self.checkBox_11.setChecked(True)
+
+    	if len(prescricao)>11:
+    		self.line_med1_12.setText(prescricao[11][1])
+    		self.line_qtd1_12.setText(str(prescricao[11][2]))
+    		if prescricao[11][3] == 1:
+    			self.checkBox_12.setChecked(True)
+
+    	if len(prescricao)>12:
+    		self.line_med1_13.setText(prescricao[12][1])
+    		self.line_qtd1_13.setText(str(prescricao[12][2]))
+    		if prescricao[12][3] == 1:
+    			self.checkBox_13.setChecked(True)
+
+    	if len(prescricao)>13:
+    		self.line_med1_14.setText(prescricao[13][1])
+    		self.line_qtd1_14.setText(str(prescricao[13][2]))
+    		if prescricao[13][3] == 1:
+    			self.checkBox_14.setChecked(True)
+
+    	if len(prescricao)>14:
+    		self.line_med1_15.setText(prescricao[14][1])
+    		self.line_qtd1_15.setText(str(prescricao[14][2]))
+    		if prescricao[14][3] == 1:
+    			self.checkBox_15.setChecked(True)
 
     def salvarPrescricao(self):
         self.vetMed = []
@@ -1803,20 +1929,32 @@ class TelaPrescricao(QtWidgets.QWidget):
             if not medicamentoInvalido:
                 paciente.recuperaBDpaciente(self.line_cpfPac.text())
 
-                prescricao.setIdPaciente(paciente.pac[0][0])
+                prescricao.setIdPaciente(paciente.getPaciente()[0][0])
                 prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
                 for indice in range(len(self.vetMed)):
                     prescricao.setNomeItem(self.vetMed[indice][0])
                     prescricao.setQtdAdm(self.vetMed[indice][1])
                     prescricao.setFazUso(self.vetMed[indice][2])
                     prescricao.gravaBDprescricao()
-
             else:
-                self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido].upper()+" não está cadastrado!")
+                self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido]+" não está cadastrado!")
 
         else:
             if self.line_cpfPac.text() != '':
                 self.label_Erro.setText("Paciente não cadastrado")
+
+    def buscarPrescricao(self):
+    	paciente = Paciente()
+    	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
+    		prescricao = Prescricao()
+    		paciente.recuperaBDpaciente(self.line_cpfPac.text())
+    		prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+    		prescricao.recuperaBDprescricao()
+    		self.preencheCampos(prescricao.getPrescricao())
+    	else:
+    		if self.line_cpfPac.text() != '':
+    			self.label_Erro.setText("Paciente não cadastrado")
+
         
 #=======================================================================================================
 #=======================================================================================================

@@ -202,6 +202,13 @@ class BDitem(object):
         lote = self.cursor.fetchall()
         return lote
 
+    def recuperaitemBD_SP(self):
+        self.cursor.execute("SELECT * FROM item")
+        dado = self.cursor.fetchall()
+        self.db.close()
+        return dado
+
+
     def verificaLoteItem(self,lote):
         cursor = self.db.cursor()
         cursor.execute("SELECT item_id FROM item WHERE lote = %s", lote)
@@ -294,6 +301,12 @@ class BDpaciente(object):
     def selectAllPaciente(self, cpfNome):
         dados = (cpfNome, cpfNome)
         self.cursor.execute("SELECT * FROM paciente WHERE cpf = %s OR nome LIKE %s", dados)
+        paciente = self.cursor.fetchall()
+        self.db.close()
+        return paciente
+
+    def selectAllPacienteSP(self):
+        self.cursor.execute("SELECT * FROM paciente")
         paciente = self.cursor.fetchall()
         self.db.close()
         return paciente
@@ -761,6 +774,11 @@ class Item(object):
         bdItem = BDitem()
         return bdItem.recuperaIDitemBD(lote)
 
+    def recuperaItemBDSP(self):
+        bdItem = BDitem()
+        dados=bdItem.recuperaitemBD_SP()
+        return dados
+
     def validaLoteItem(self, lote):
         bdItem = BDitem()
         return bdItem.verificaLoteItem(lote)
@@ -878,6 +896,11 @@ class Paciente(object):
     def recuperaBDpaciente(self, cpfNome):
         bdPac = BDpaciente()
         self.pac = bdPac.selectAllPaciente(cpfNome)
+
+    def recuperaBDpacienteSP(self):
+        bdPac = BDpaciente()
+        self.pac = bdPac.selectAllPacienteSP()
+
 
     def validaCPFpaciente(self, cpf):#Verifica se o cpf existe
         dbPac = BDpaciente()
@@ -2896,7 +2919,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
         self.pushButton.clicked.connect(self.TelaEditarProdEMedInfo)
         self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
         self.pushButton_3.clicked.connect(self.lineEdit.copy)
-        self.pushButton_3.clicked.connect(self.buscarMedicamento())
+        self.pushButton_3.clicked.connect(self.buscarMedicamento)
         self.pushButton_2.clicked.connect(self.limparTela)
         self.item = Item()
 
@@ -4040,6 +4063,152 @@ class Mensagem(QtWidgets.QWidget):
 
 
 #=========================================================================================================================
+class Ui_Form_VisualizaPac(object):
+
+    def setupUi(self, Form):
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setObjectName("Form")
+        Form.setFixedSize(630, 450)
+
+        self.pushButton_4 = QtWidgets.QPushButton(Form)
+        self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
+        self.pushButton_4.setObjectName("Menu Principal")
+
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
+        self.tabela.setColumnCount(6)     #Set dez columns
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Visualizar Pacientes"))
+        self.pushButton_4.setText(_translate("Form", "Menu principal"))
+
+class VisualizarPac(QtWidgets.QWidget, Ui_Form_VisualizaPac):
+
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
+        self.paciente = Paciente()
+        self.buscarPaciente()
+
+
+    def limparTela(self):
+    	self.tabela.clear()
+    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+    def TelaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def buscarPaciente(self):
+        self.limparTela()
+        self.paciente.recuperaBDpacienteSP()
+        self.preencheTabela()
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+    def preencheTabela(self):
+        dados = self.paciente.getPaciente()
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            for num_coluna, dado in enumerate(linha_dado):
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(6):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+#=========================================================================================================================
+
+class Ui_Form_VisualizaEst(object):
+
+    def setupUi(self, Form):
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setObjectName("Form")
+        Form.setFixedSize(630, 450)
+
+        self.pushButton_4 = QtWidgets.QPushButton(Form)
+        self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
+        self.pushButton_4.setObjectName("Menu Principal")
+
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
+        self.tabela.setColumnCount(10)     #Set dez columns
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Visualizar Estoque"))
+        self.pushButton_4.setText(_translate("Form", "Menu principal"))
+
+class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
+
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
+        self.item = Item()
+        self.buscarItem1()
+
+
+    def limparTela(self):
+    	self.tabela.clear()
+    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+    def TelaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def buscarItem1(self):
+        self.item.recuperaItemBDSP()
+        self.preencheTabela()
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+    def preencheTabela(self):
+        dados = self.item.recuperaItemBDSP()
+        print("dados")
+        print(dados)
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            for num_coluna, dado in enumerate(linha_dado):
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(10):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
 #=========================================================================================================================
 
 class Ui_FormMenuPrincipal(object):
@@ -4192,6 +4361,9 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
     switch_window_7 = QtCore.pyqtSignal()
     switch_window_8 = QtCore.pyqtSignal()
     switch_window_9 = QtCore.pyqtSignal()
+    switch_window_10 = QtCore.pyqtSignal()
+    switch_window_11 = QtCore.pyqtSignal()
+
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -4205,8 +4377,16 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
         self.pushButton_CadPresc.clicked.connect(self.telaPrescricao)
+        self.pushButton_VisuPac.clicked.connect(self.telaVisualizarPac)
+        self.pushButton_VisuEst.clicked.connect(self.telaVisualizarEst)
         self.pushButton_Sair.clicked.connect(self.telaLogin)
 
+    def telaVisualizarPac(self):
+        self.switch_window_10.emit()
+
+    def telaVisualizarEst(self):
+        self.switch_window_11.emit()
+   
     def telaLogin(self):
         self.switch_window_9.emit()
 
@@ -4399,12 +4579,26 @@ class Controller:
         self.menu.switch_window_7.connect(self.show_baixa_item)
         self.menu.switch_window_8.connect(self.show_cad_presc)
         self.menu.switch_window_9.connect(self.fechar_menu)
+        self.menu.switch_window_10.connect(self.show_visualiza_pac)
+        self.menu.switch_window_11.connect(self.show_visualiza_est)
         self.login.close()
         self.menu.show()
 
     def show_cad_presc(self):
         self.cadPresc = TelaPrescricao()
         self.cadPresc.show()
+
+    def show_visualiza_pac(self):
+        self.visualizarPac = VisualizarPac()
+        self.visualizarPac.switch_window.connect(self.show_main)
+        self.visualizarPac.switch_window_2.connect(self.show_msg)
+        self.visualizarPac.show()
+
+    def show_visualiza_est(self):
+        self.visualizarEst = VisualizarEstoque()
+        self.visualizarEst.switch_window.connect(self.show_main)
+        self.visualizarEst.switch_window_2.connect(self.show_msg)
+        self.visualizarEst.show()
 
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()
@@ -4474,8 +4668,6 @@ class Controller:
 
     def show_fecha_msg(self):
         self.msg.close()
-
-
 
 
 def main():

@@ -1133,12 +1133,17 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
         self.pushButton_MenuPrin.setGeometry(QtCore.QRect(460, 100, 91, 28))
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
+
         self.label_Paciente = QtWidgets.QLabel(Form)
         self.label_Paciente.setGeometry(QtCore.QRect(20, 30, 55, 16))
         self.label_Paciente.setObjectName("label_Paciente")
+
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
         self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
         self.line_cpfPac.setObjectName("line_cpfPac")
+        self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
+        self.line_cpfPac.setMaxLength(11)
+
         self.pushButton_Salvar = QtWidgets.QPushButton(Form)
         self.pushButton_Salvar.setGeometry(QtCore.QRect(460, 180, 93, 28))
         self.pushButton_Salvar.setObjectName("pushButton_Salvar")
@@ -1156,10 +1161,12 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
+
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
+        
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 332, 402))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
@@ -1914,34 +1921,40 @@ class TelaPrescricao(QtWidgets.QWidget):
     			self.checkBox_15.setChecked(True)
 
     def salvarPrescricao(self):
-        self.vetMed = []
-        paciente = Paciente()
-        usuario = Usuario()
-        prescricao = Prescricao()
-        item = Item()
-        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            self.lerSeqCampos()
-            item = Item()
-            medicamentoInvalido = None
-            for indice in range(len(self.vetMed)):
-                if not item.validaLoteNomeItem(self.vetMed[indice][0]):
-                    medicamentoInvalido = indice
-            if not medicamentoInvalido:
-                paciente.recuperaBDpaciente(self.line_cpfPac.text())
+    	self.label_Erro.clear()
+    	self.vetMed = []
+    	paciente = Paciente()
+    	usuario = Usuario()
+    	prescricao = Prescricao()
+    	item = Item()
+    	if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+    		self.lerSeqCampos()
+    		medicamentoInvalido = None
+    		medicamentoDuplicado = None
+    		for indice in range(len(self.vetMed)):
+    			for posicao in range(len(self.vetMed)):
+    				if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+    						medicamentoDuplicado = indice
 
-                prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-                prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                for indice in range(len(self.vetMed)):
-                    prescricao.setNomeItem(self.vetMed[indice][0])
-                    prescricao.setQtdAdm(self.vetMed[indice][1])
-                    prescricao.setFazUso(self.vetMed[indice][2])
-                    prescricao.gravaBDprescricao()
-            else:
-                self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido]+" não está cadastrado!")
+    			if not item.validaLoteNomeItem(self.vetMed[indice][0]):
+    				medicamentoInvalido = indice
 
-        else:
-            if self.line_cpfPac.text() != '':
-                self.label_Erro.setText("Paciente não cadastrado")
+    		if not medicamentoInvalido and not medicamentoDuplicado:
+    			paciente.recuperaBDpaciente(self.line_cpfPac.text())
+    			prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+    			prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+    			for indice in range(len(self.vetMed)):
+    				prescricao.setNomeItem(self.vetMed[indice][0])
+    				prescricao.setQtdAdm(self.vetMed[indice][1])
+    				prescricao.setFazUso(self.vetMed[indice][2])
+    				prescricao.gravaBDprescricao()
+    		else:
+    			if medicamentoInvalido:
+    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
+    			else:
+    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
+    	else:
+    		self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
     	paciente = Paciente()

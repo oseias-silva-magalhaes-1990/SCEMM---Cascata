@@ -990,11 +990,10 @@ class Saida(object):
     def __init__(self):
         self.descarte = ""
         self.item_id = ""
-        self.usiario_id =""
+        self.usuario_id =""
+        self.paciente_id = ""
+        self.prescricao_id = ""
         self.QtdSaida = ""
-
-    def setItem_id(self, id):
-        self.item_id = id
 
     def setDataSaida(self, dataSaida):
         self.data_saida = dataSaida
@@ -1005,8 +1004,17 @@ class Saida(object):
     def setDescarte(self, descarte):
         self.descarte = descarte
 
-    def setUsuario_id(self, usuario_id):
+    def setIdUsuario(self, usuario_id):
         self.usuario_id = usuario_id
+
+    def setIdPaciente(self, paciente_id):
+        self.paciente_id = paciente_id
+
+    def setIdPrescricao(self, prescricao_id):
+        self.prescricao_id = prescricao_id
+
+    def setIdItem(self, id):
+        self.item_id = id
 
 # ============================================================
 
@@ -1019,6 +1027,12 @@ class Saida(object):
     def getDescarte(self):
         return self.descarte
 # =============================================================
+    def gravaBDsaida(self):
+        print(self.item_id)
+        print(self.usuario_id)
+        print(self.paciente_id)
+        print(self.prescricao_id)
+        print(self.QtdSaida)
 
 #========================================================================================================================
 class Usuario(object):
@@ -1139,9 +1153,12 @@ class BaixaItem(QtWidgets.QWidget):
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
-        self.jaRetirado = False
+        self.nomeMedInvalido = None
+        self.loteMedInvalido = None
+        self.nomeMedDuplicado = None
+        self.prescricao_id = []
+        self.prescricao = Prescricao()
         self.setupUi(self)
-
 
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -1826,38 +1843,21 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparCampos(self):
-        self.line_qtd1_15.clear()
-        self.line_qtd1_14.clear()
-        self.line_qtd1_13.clear()
-        self.line_qtd1_12.clear()
-        self.line_qtd1_11.clear()
-        self.line_qtd1_10.clear()
-        self.line_qtd1_9.clear()
-        self.line_qtd1_8.clear()
-        self.line_qtd1_7.clear()
-        self.line_qtd1_6.clear()
-        self.line_qtd1_5.clear()
-        self.line_qtd1_4.clear()
-        self.line_qtd1_3.clear()
-        self.line_qtd1.clear()
-        self.line_qtd1_2.clear()
-        self.label_Erro.clear()
-        self.checkBox.setChecked(False)
-        self.checkBox_2.setChecked(False)
-        self.checkBox_3.setChecked(False)
-        self.checkBox_4.setChecked(False)
-        self.checkBox_5.setChecked(False)
-        self.checkBox_6.setChecked(False)
-        self.checkBox_7.setChecked(False)
-        self.checkBox_8.setChecked(False)
-        self.checkBox_9.setChecked(False)
-        self.checkBox_10.setChecked(False)
-        self.checkBox_11.setChecked(False)
-        self.checkBox_12.setChecked(False)
-        self.checkBox_13.setChecked(False)
-        self.checkBox_14.setChecked(False)
-        self.checkBox_15.setChecked(False)
-
+        self.line_lote.clear()
+        self.line_lote_2.clear()
+        self.line_lote_3.clear()
+        self.line_lote_4.clear()
+        self.line_lote_5.clear()
+        self.line_lote_6.clear()
+        self.line_lote_7.clear()
+        self.line_lote_8.clear()
+        self.line_lote_9.clear()
+        self.line_lote_10.clear()
+        self.line_lote_11.clear()
+        self.line_lote_12.clear()
+        self.line_lote_13.clear()
+        self.line_lote_14.clear()
+        self.line_lote_15.clear()
 
     def maisCampos(self):
         if self.cont == 0:
@@ -1899,231 +1899,251 @@ class BaixaItem(QtWidgets.QWidget):
     def lerSeqCampos(self):
         if self.line_med1.text() != '':
             if self.checkBox.isChecked():
-                vet = (self.line_med1.text(), self.line_qtd1.text(), self.lote.text(), 1)
+                vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 1)
             else:
-                vet = (self.line_med1.text(), self.line_qtd1.text(), self.lote.text(), 0)
+                vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_2.text() != '': 
             if self.checkBox_2.isChecked():
-                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.lote_2.text(), 1)
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 1)
             else:
-                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.lote_2.text(), 0)
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_3.text() != '': 
             if self.checkBox_3.isChecked():
-                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.lote_3.text(), 1)
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 1)
             else:
-                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.lote_3.text(), 0)
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_4.text() != '': 
             if self.checkBox_4.isChecked():
-                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.lote_4.text(), 1)
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.line_lote_4.text(), 1)
             else:
-                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.lote_4.text(), 0)
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.line_lote_4.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_5.text() != '': 
             if self.checkBox_5.isChecked():
-                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.lote_5.text(), 1)
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.line_lote_5.text(), 1)
             else:
-                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.lote_5.text(), 0)
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.line_lote_5.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_6.text() != '': 
             if self.checkBox_6.isChecked():
-                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.lote_6.text(), 1)
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.line_lote_6.text(), 1)
             else:
-                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.lote_6.text(), 0)
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.line_lote_6.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_7.text() != '': 
             if self.checkBox_7.isChecked():
-                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.lote_7.text(), 1)
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.line_lote_7.text(), 1)
             else:
-                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.lote_7.text(), 0)
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.line_lote_7.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_8.text() != '': 
             if self.checkBox_8.isChecked():
-                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.lote_7.text(), 1)
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.line_lote_7.text(), 1)
             else:
-                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.lote_7.text(), 0)
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.line_lote_7.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_9.text() != '': 
             if self.checkBox_9.isChecked():
-                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.lote_9.text(), 1)
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.line_lote_9.text(), 1)
             else:
-                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.lote_9.text(), 0)
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.line_lote_9.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_10.text() != '': 
             if self.checkBox_10.isChecked():
-                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.lote_10.text(), 1)
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.line_lote_10.text(), 1)
             else:
-                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.lote_10.text(), 0)
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.line_lote_10.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_11.text() != '': 
             if self.checkBox_11.isChecked():
-                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.lote_11.text(), 1)
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.line_lote_11.text(), 1)
             else:
-                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.lote_11.text(), 0)
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.line_lote_11.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_12.text() != '': 
             if self.checkBox_12.isChecked():
-                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.lote_12.text(), 1)
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.line_lote_12.text(), 1)
             else:
-                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.lote_12.text(), 0)
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.line_lote_12.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_13.text() != '': 
             if self.checkBox_13.isChecked():
-                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.lote_13.text(), 1)
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.line_lote_13.text(), 1)
             else:
-                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.lote_13.text(), 0)
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.line_lote_13.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_14.text() != '': 
             if self.checkBox_14.isChecked():
-                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.lote_14.text(), 1)
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.line_lote_14.text(), 1)
             else:
-                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.lote_14.text(), 0)
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.line_lote_14.text(), 0)
             self.vetMed.append(vet)
         if self.line_med1_15.text() != '': 
             if self.checkBox_15.isChecked():
-                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.lote_15.text(), 1)
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.line_lote_15.text(), 1)
             else:
-                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.lote_15.text(), 0)
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.line_lote_15.text(), 0)
             self.vetMed.append(vet)
 
     def preencheCampos(self, prescricao):
     	self.limparCampos()
     	if len(prescricao)>0:
-    		self.line_med1.setText(prescricao[0][1])
-    		self.line_qtd1.setText(str(prescricao[0][2]))
-    		if prescricao[0][3] == 1:
-    			self.checkBox.setChecked(True)
+            self.prescricao_id.append(prescricao[0][0])
+            self.line_med1.setText(prescricao[0][1])
+            self.line_qtd1.setText(str(prescricao[0][2]))
+            if prescricao[0][3] == 1:
+                self.checkBox.setChecked(True)
 
     	if len(prescricao)>1:
-    		self.line_med1_2.setText(prescricao[1][1])
-    		self.line_qtd1_2.setText(str(prescricao[1][2]))
-    		if prescricao[1][3] == 1:
-    			self.checkBox_2.setChecked(True)
+            self.prescricao_id.append(prescricao[1][0])
+            self.line_med1_2.setText(prescricao[1][1])
+            self.line_qtd1_2.setText(str(prescricao[1][2]))
+            if prescricao[1][3] == 1:
+                self.checkBox_2.setChecked(True)
 
     	if len(prescricao)>2:
-    		self.line_med1_3.setText(prescricao[2][1])
-    		self.line_qtd1_3.setText(str(prescricao[2][2]))
-    		if prescricao[2][3] == 1:
-    			self.checkBox_3.setChecked(True)
+            self.prescricao_id.append(prescricao[2][0])
+            self.line_med1_3.setText(prescricao[2][1])
+            self.line_qtd1_3.setText(str(prescricao[2][2]))
+            if prescricao[2][3] == 1:
+                self.checkBox_3.setChecked(True)
 
     	if len(prescricao)>3:
-    		self.line_med1_4.setText(prescricao[3][1])
-    		self.line_qtd1_4.setText(str(prescricao[3][2]))
-    		if prescricao[3][3] == 1:
-    			self.checkBox_4.setChecked(True)
+            self.prescricao_id.append(prescricao[3][0])
+            self.line_med1_4.setText(prescricao[3][1])
+            self.line_qtd1_4.setText(str(prescricao[3][2]))
+            if prescricao[3][3] == 1:
+                self.checkBox_4.setChecked(True)
 
     	if len(prescricao)>4:
-    		self.line_med1_5.setText(prescricao[4][1])
-    		self.line_qtd1_5.setText(str(prescricao[4][2]))
-    		if prescricao[4][3] == 1:
-    			self.checkBox_5.setChecked(True)
+            self.prescricao_id.append(prescricao[4][0])
+            self.line_med1_5.setText(prescricao[4][1])
+            self.line_qtd1_5.setText(str(prescricao[4][2]))
+            if prescricao[4][3] == 1:
+                self.checkBox_5.setChecked(True)
 
     	if len(prescricao)>5:
-    		self.line_med1_6.setText(prescricao[5][1])
-    		self.line_qtd1_6.setText(str(prescricao[5][2]))
-    		if prescricao[5][3] == 1:
-    			self.checkBox_6.setChecked(True)
+            self.prescricao_id.append(prescricao[5][0])
+            self.line_med1_6.setText(prescricao[5][1])
+            self.line_qtd1_6.setText(str(prescricao[5][2]))
+            if prescricao[5][3] == 1:
+                self.checkBox_6.setChecked(True)
 
     	if len(prescricao)>6:
-    		self.line_med1_7.setText(prescricao[6][1])
-    		self.line_qtd1_7.setText(str(prescricao[6][2]))
-    		if prescricao[6][3] == 1:
-    			self.checkBox_7.setChecked(True)
+            self.prescricao_id.append(prescricao[6][0])
+            self.line_med1_7.setText(prescricao[6][1])
+            self.line_qtd1_7.setText(str(prescricao[6][2]))
+            if prescricao[6][3] == 1:
+                self.checkBox_7.setChecked(True)
 
     	if len(prescricao)>7:
-    		self.line_med1_8.setText(prescricao[7][1])
-    		self.line_qtd1_8.setText(str(prescricao[7][2]))
-    		if prescricao[7][3] == 1:
-    			self.checkBox_8.setChecked(True)
+            self.prescricao_id.append(prescricao[7][0])
+            self.line_med1_8.setText(prescricao[7][1])
+            self.line_qtd1_8.setText(str(prescricao[7][2]))
+            if prescricao[7][3] == 1:
+                self.checkBox_8.setChecked(True)
 
     	if len(prescricao)>8:
-    		self.line_med1_9.setText(prescricao[8][1])
-    		self.line_qtd1_9.setText(str(prescricao[8][2]))
-    		if prescricao[8][3] == 1:
-    			self.checkBox_9.setChecked(True)
+            self.prescricao_id.append(prescricao[8][0])
+            self.line_med1_9.setText(prescricao[8][1])
+            self.line_qtd1_9.setText(str(prescricao[8][2]))
+            if prescricao[8][3] == 1:
+                self.checkBox_9.setChecked(True)
 
     	if len(prescricao)>9:
-    		self.line_med1_10.setText(prescricao[9][1])
-    		self.line_qtd1_10.setText(str(prescricao[9][2]))
-    		if prescricao[9][3] == 1:
-    			self.checkBox_10.setChecked(True)
+            self.prescricao_id.append(prescricao[9][0])
+            self.line_med1_10.setText(prescricao[9][1])
+            self.line_qtd1_10.setText(str(prescricao[9][2]))
+            if prescricao[9][3] == 1:
+                self.checkBox_10.setChecked(True)
 
     	if len(prescricao)>10:
-    		self.line_med1_11.setText(prescricao[10][1])
-    		self.line_qtd1_11.setText(str(prescricao[10][2]))
-    		if prescricao[10][3] == 1:
-    			self.checkBox_11.setChecked(True)
+            self.prescricao_id.append(prescricao[10][0])
+            self.line_med1_11.setText(prescricao[10][1])
+            self.line_qtd1_11.setText(str(prescricao[10][2]))
+            if prescricao[10][3] == 1:
+                self.checkBox_11.setChecked(True)
 
     	if len(prescricao)>11:
-    		self.line_med1_12.setText(prescricao[11][1])
-    		self.line_qtd1_12.setText(str(prescricao[11][2]))
-    		if prescricao[11][3] == 1:
-    			self.checkBox_12.setChecked(True)
+            self.prescricao_id.append(prescricao[11][0])
+            self.line_med1_12.setText(prescricao[11][1])
+            self.line_qtd1_12.setText(str(prescricao[11][2]))
+            if prescricao[11][3] == 1:
+                self.checkBox_12.setChecked(True)
 
     	if len(prescricao)>12:
-    		self.line_med1_13.setText(prescricao[12][1])
-    		self.line_qtd1_13.setText(str(prescricao[12][2]))
-    		if prescricao[12][3] == 1:
-    			self.checkBox_13.setChecked(True)
+            self.prescricao_id.append(prescricao[12][0])
+            self.line_med1_13.setText(prescricao[12][1])
+            self.line_qtd1_13.setText(str(prescricao[12][2]))
+            if prescricao[12][3] == 1:
+                self.checkBox_13.setChecked(True)
 
     	if len(prescricao)>13:
-    		self.line_med1_14.setText(prescricao[13][1])
-    		self.line_qtd1_14.setText(str(prescricao[13][2]))
-    		if prescricao[13][3] == 1:
-    			self.checkBox_14.setChecked(True)
+            self.prescricao_id.append(prescricao[13][0])
+            self.line_med1_14.setText(prescricao[13][1])
+            self.line_qtd1_14.setText(str(prescricao[13][2]))
+            if prescricao[13][3] == 1:
+                self.checkBox_14.setChecked(True)
 
     	if len(prescricao)>14:
-    		self.line_med1_15.setText(prescricao[14][1])
-    		self.line_qtd1_15.setText(str(prescricao[14][2]))
-    		if prescricao[14][3] == 1:
-    			self.checkBox_15.setChecked(True)
+            self.prescricao_id.append(prescricao[14][0])
+            self.line_med1_15.setText(prescricao[14][1])
+            self.line_qtd1_15.setText(str(prescricao[14][2]))
+            self.checkBox_15.setChecked(True)
 
     def retirarPrescrito(self):
     	self.label_Erro.clear()
     	self.vetMed = []
     	paciente = Paciente()
     	usuario = Usuario()
-    	prescricao = Prescricao()
+    	saida = Saida()
     	item = Item()
     	if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-    		self.lerSeqCampos()
-    		medicamentoInvalido = None
-    		medicamentoDuplicado = None
-    		for indice in range(len(self.vetMed)):
-    			for posicao in range(len(self.vetMed)):
-    				if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
-    						medicamentoDuplicado = indice
+            self.lerSeqCampos()
+            for indice in range(len(self.vetMed)):
+                for posicao in range(len(self.vetMed)):
+                    if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                        self.nomeMedDuplicado = indice
 
-    			if not item.validaLoteNomeItem(self.vetMed[indice][0]):
-    				medicamentoInvalido = indice
+                if not item.validaLoteNomeItem(self.vetMed[indice][0]):
+                    self.nomeMedInvalido = indice
 
-    		if not medicamentoInvalido and not medicamentoDuplicado:
-    			paciente.recuperaBDpaciente(self.line_cpfPac.text())
-    			prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-    			prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-    			for indice in range(len(self.vetMed)):
-    				prescricao.setNomeItem(self.vetMed[indice][0])
-    				prescricao.setQtdAdm(self.vetMed[indice][1])
-    				prescricao.setFazUso(self.vetMed[indice][2])
-    				prescricao.gravaBDprescricao()
-    		else:
-    			if medicamentoInvalido:
-    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
-    			else:
-    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
+                if not item.validaLoteNomeItem(self.vetMed[indice][2]):
+                    self.loteMedInvalido = indice
+
+            if not self.nomeMedInvalido and not self.nomeMedDuplicado:
+                paciente.recuperaBDpaciente(self.line_cpfPac.text())
+                saida.setIdPaciente(paciente.getPaciente()[0][0])
+                saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                for i in range(len(self.vetMed)):
+                    if self.self.vetMed[i][1]
+                    saida.setQtdSaida(self.vetMed[i][1])#<------
+                    item.recuperaBDitem(self.vetMed[i][2])#<------
+                    saida.setIdItem(item.getItemID()[0][0])#<------
+                    saida.setIdPrescricao(self.prescricao_id[i])
+
+                    if self.vetMed[i][3] == 1:
+                        saida.gravaBDsaida()
+            else:
+                if self.nomeMedInvalido:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[self.nomeMedInvalido][0].upper()+" não está cadastrado!")
+                if self.loteMedInvalido:
+                    self.label_Erro.setText("O lote "+self.vetMed[self.nomeMedInvalido][0].upper()+" não está cadastrado!")
+                if self.medicamentoDuplicado:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[self.nomeMedDuplicado][0].upper()+" está duplicado!")
     	else:
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
     	paciente = Paciente()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-    		prescricao = Prescricao()
-    		paciente.recuperaBDpaciente(self.line_cpfPac.text())
-    		prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-    		prescricao.recuperaBDprescricao()
-    		self.preencheCampos(prescricao.getPrescricao())
+            paciente.recuperaBDpaciente(self.line_cpfPac.text())
+            self.prescricao.setIdPaciente(self.paciente.getPaciente()[0][0])
+            self.prescricao.recuperaBDprescricao()
+            self.preencheCampos(self.prescricao.getPrescricao())
     	else:
     		if self.line_cpfPac.text() != '':
     			self.label_Erro.setText("Paciente não cadastrado")

@@ -3043,14 +3043,14 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_2.setGeometry(QtCore.QRect(160, 70, 131, 22))
         self.lineEdit_2.setObjectName("Quantidade")
         self.lineEdit_2.setPlaceholderText("Digite a quantidade")
-        self.lineEdit_2.setToolTip("Quantidade que deseja armazenar")
+        self.lineEdit_2.setToolTip("Quantidade que deseja armazenar,\n somente o numero")
         self.lineEdit_2.setValidator(QtGui.QIntValidator())
 
         self.lineEdit_4 = QtWidgets.QLineEdit(Form)
         self.lineEdit_4.setGeometry(QtCore.QRect(160, 100, 131, 22))
         self.lineEdit_4.setObjectName("QtdMinima")
         self.lineEdit_4.setPlaceholderText("Digite qtd minima")
-        self.lineEdit_4.setToolTip("Quantidade com margem\nmínima em estoque")
+        self.lineEdit_4.setToolTip("Quantidade mínima em estoque que deseja ser alertado(a)\n Somente numeros")
         self.lineEdit_4.setValidator(QtGui.QIntValidator())
 
         self.lineEdit_5 = QtWidgets.QLineEdit(Form)
@@ -3081,15 +3081,13 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
         self.lineEdit_7.setObjectName("Peso")
         self.lineEdit_7.setPlaceholderText("Digite o peso")
-        self.lineEdit_7.setFont(self.fontCampos)
-        self.lineEdit_7.setToolTip("Gramagem específica do medicamento (Ex. 155.55)")
+        self.lineEdit_7.setToolTip("Gramagem específica do medicamento (Ex: 155.55)")
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
 
         self.lineEdit_8 = QtWidgets.QLineEdit(Form)
         self.lineEdit_8.setGeometry(QtCore.QRect(410, 130, 131, 22))
         self.lineEdit_8.setObjectName("unidade")
         self.lineEdit_8.setPlaceholderText("Digite a unidade")
-        self.lineEdit_8.setFont(self.fontUnidade)
         self.lineEdit_8.setMaxLength(30)
         self.lineEdit_8.setToolTip("Unidade do peso especificado \nEx. (mg, mg/ml, ml)")
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
@@ -3114,6 +3112,8 @@ class Ui_FormCadProdEMed(object):
         self.label_6 = QtWidgets.QLabel(Form)
         self.label_6.setGeometry(QtCore.QRect(300, 160, 101, 20))
         self.label_6.setObjectName("Data de Validade")
+        self.label_6.setToolTip("Insira a data de Validade presente\n na cartela do medicamento")
+
 
         self.label_8 = QtWidgets.QLabel(Form)
         self.label_8.setGeometry(QtCore.QRect(90, 100, 71, 20))
@@ -5251,7 +5251,8 @@ class Ui_FormLogin(object):
         self.lineEdit_1.setObjectName("lineEdit_1")
         self.lineEdit_1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_1))
         self.lineEdit_1.setFont(self.fontCampos)
-        self.lineEdit_1.setToolTip("Usuário")
+        self.lineEdit_1.setToolTip("Insira seu Usuário")
+        self.lineEdit_1.setPlaceholderText("insira seu login de acesso")
         self.lineEdit_1.setGeometry(QtCore.QRect(70, 40, 300, 25))
 
         self.lineEdit_2 = QtWidgets.QLineEdit(Form)

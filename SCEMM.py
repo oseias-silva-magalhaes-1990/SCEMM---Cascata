@@ -2960,13 +2960,13 @@ class TelaPrescricao(QtWidgets.QWidget):
     def preencheCampos(self, prescricao):
     	self.limparCampos()
     	if len(prescricao)>0:
-    		self.line_med1.setText(str(prescricao[0][1]))
-    		self.line_qtd1.setText(str(prescricao[0][2]))
-    		if prescricao[0][3] == 1:
-    			self.checkBox.setChecked(True)
+            self.line_med1.setText(prescricao[0][1])
+            self.line_qtd1.setText(str(prescricao[0][2]))
+            if prescricao[0][3] == 1:
+                self.checkBox.setChecked(True)
 
     	if len(prescricao)>1:
-    		self.line_med1_2.setText(str(prescricao[1][1]))
+    		self.line_med1_2.setText(prescricao[1][1])
     		self.line_qtd1_2.setText(str(prescricao[1][2]))
     		if prescricao[1][3] == 1:
     			self.checkBox_2.setChecked(True)
@@ -3086,16 +3086,16 @@ class TelaPrescricao(QtWidgets.QWidget):
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
-    	paciente = Paciente()
-    	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-    		prescricao = Prescricao()
-    		paciente.recuperaBDpaciente(self.line_cpfPac.text())
-    		prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-    		prescricao.recuperaBDprescricao()
-    		self.preencheCampos(prescricao.getPrescricao())
-    	else:
-    		if self.line_cpfPac.text() != '':
-    			self.label_Erro.setText("Paciente não cadastrado")
+        paciente = Paciente()
+        if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            prescricao = Prescricao()
+            paciente.recuperaBDpaciente(self.line_cpfPac.text())
+            prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+            prescricao.recuperaBDprescricao()
+            print(prescricao.getPrescricao())
+            self.preencheCampos(prescricao.getPrescricao())
+        elif self.line_cpfPac.text() != '':
+            self.label_Erro.setText("Paciente não cadastrado")
 
       
 
@@ -3119,9 +3119,10 @@ class Ui_FormCadProdEMed(object):
         self.fontUnidade.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 381, 22))
@@ -3353,7 +3354,8 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
                     self.registraEntrada(lote)
                     self.limparCampos()
                     Mensagem.msg = "Item inserido com sucesso!"
-                    Mensagem.cor = "Blue"
+                    Mensagem.cor = "black"
+                    Mensagem.img = 1
                     self.switch_window_2.emit()
             else:
                 self.labelErro.setText("Data de validade menor que a atual!")
@@ -3387,9 +3389,10 @@ class CadastroPaciente(QtWidgets.QWidget):
         Form.setFixedSize(574, 314)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.lineEdit_nome = QtWidgets.QLineEdit(Form)
         self.lineEdit_nome.setGeometry(QtCore.QRect(60, 50, 120, 22))
@@ -3523,7 +3526,8 @@ class CadastroPaciente(QtWidgets.QWidget):
                         paciente.setDataNasc(data_nasc)
                         paciente.gravaBDpaciente()
                         Mensagem.msg = "Paciente Cadastrado com sucesso!"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                         self.limpaCampos()
                 else:
@@ -3559,9 +3563,10 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setFont(self.fontLabel)
@@ -3689,7 +3694,8 @@ class CadastroUsuario(QtWidgets.QWidget):
                         if self.radioButton.isChecked():#Se definido como admin = sim
                             usuario.insereAdminUsuario()#insere Administrador na tabela do BD
                         Mensagem.msg = "Usuario Cadastrado com sucesso!"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                         self.limpaCampos()
                     else:
@@ -3717,9 +3723,10 @@ class Ui_Form_EditProdMed(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setGeometry(QtCore.QRect(550, 10, 100, 20))
@@ -3909,9 +3916,10 @@ class Ui_Form_EditProdMedInfo(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 381, 22))
@@ -4099,7 +4107,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
         item = Item()
         item.excluiItem(lote)
         Mensagem.msg = "Item Excluído com sucesso"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.switch_window_2.emit()
 
     def restaurarItem(self):
@@ -4109,7 +4118,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
         item = Item()
         item.restauraItem(lote)
         Mensagem.msg = "Item Restaurado com sucesso"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.switch_window_2.emit()
 
     def atualizarItem(self):
@@ -4148,7 +4158,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
 
                         self.registraEntrada(lote, quantidade)
                         Mensagem.msg = "Item atualizado com sucesso!"
-                        Mensagem.cor = "Blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                 else:
                     self.label.clear()
@@ -4166,7 +4177,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
                     item.updateBDitem(EditarProdEMedInfo.lote)
                     self.registraEntrada(lote, quantidade)
                     Mensagem.msg = "Item atualizado com sucesso!"
-                    Mensagem.cor = "Blue"
+                    Mensagem.cor = "black"
+                    Mensagem.img = 1
                     self.switch_window_2.emit()
             else:
                 self.label.setText("Data de validade menor que a atual!")
@@ -4212,9 +4224,10 @@ class EditarPaciente(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_Erros = QtWidgets.QLabel(Form)
         self.label_Erros.setGeometry(QtCore.QRect(300, 10, 300, 20))
@@ -4353,9 +4366,10 @@ class UI_Form_EditarPacienteInfo(object):
         self.fontLabelErro.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
         self.pushButton_MenuPrin.setGeometry(QtCore.QRect(470, 110, 91, 28))
@@ -4481,7 +4495,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                             paciente.setDataNasc(data_nasc)
                             paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
                             Mensagem.msg = "Paciente atualizado com sucesso"
-                            Mensagem.cor = "blue"
+                            Mensagem.cor = "black"
+                            Mensagem.img = 1
                             self.switch_window.emit()
                     else:
                         paciente.setNomePaciente(nome)
@@ -4490,7 +4505,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                         paciente.setDataNasc(data_nasc)
                         paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
                         Mensagem.msg = "Paciente atualizado com sucesso"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window.emit()
                 else:
                     self.label_Erro.setText("Idade não permitida!")
@@ -4528,9 +4544,10 @@ class EditarUsuario(QtWidgets.QWidget):
         Form.setFixedSize(576, 275)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.fontLabelErro = QtGui.QFont()
         self.fontLabelErro.setFamily("Arial")
@@ -4620,7 +4637,8 @@ class EditarUsuario(QtWidgets.QWidget):
         usuario.setNomeUsuario(nome)
         usuario.excluiUsuario()
         Mensagem.msg = "Usuario Excluido com sucesso!"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.pushButton_4.setVisible(False)  # Desliga Botao Excluir
         self.pushButton_6.setVisible(True)  # Liga botao Restaurar
         self.realizaBusca()
@@ -4632,7 +4650,8 @@ class EditarUsuario(QtWidgets.QWidget):
         usuario.setNomeUsuario(nome)
         usuario.restauraUsuario()
         Mensagem.msg = "Usuario restaurado com sucesso!"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.pushButton_4.setVisible(True)  # liga Botao Excluir
         self.pushButton_6.setVisible(False)  # Desliga botao restaurar
         self.realizaBusca()
@@ -4743,7 +4762,8 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
             else:
                 usuario.retiraAdminUsuario()
             Mensagem.msg = "Usuario Atualizado com sucesso!"
-            Mensagem.cor = "blue"
+            Mensagem.cor = "black"
+            Mensagem.img = 1
             self.switch_window_2.emit()
         else:
             self.label_4.setText("Confirmação de Senha incorreta!")  # Confirma se as duas senhas estão corretas
@@ -4778,9 +4798,12 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label_6 = QtWidgets.QLabel(Form)
         self.label_6.setGeometry(QtCore.QRect(10, 270, 55, 16))
@@ -4899,6 +4922,7 @@ class Mensagem(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
     msg = ""
     cor = "black"
+    img= None
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -4909,6 +4933,21 @@ class Mensagem(QtWidgets.QWidget):
         Form.setObjectName("Form")
         Form.setFixedSize(400, 250)
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        self.imagem = QtWidgets.QLabel(Form)
+        self.imagem.setScaledContents(True)
+        self.imagem.setGeometry(150,90,90,90)
+        
+        print (self.img)
+        if self.img == 1:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado1.png"))
+        if self.img == 2:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado2.png"))
+        if self.img == 3:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado3.png"))
+        if self.img == 4:
+            self.imagem.setPixmap(QtGui.QPixmap("img/negado1.png"))
+
+        img= None
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
@@ -4920,11 +4959,11 @@ class Mensagem(QtWidgets.QWidget):
         self.label.setFont(self.fontLabel)
         self.label.setAlignment(QtCore.Qt.AlignHCenter)
         self.label.setStyleSheet('QLabel {color:' + self.cor + '}')
-        self.label.setGeometry(0, 80, 400, 125)
+        self.label.setGeometry(0, 30, 400, 125)
         self.label.setObjectName("Usuario")
 
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(155, 155, 91, 28))
+        self.pushButton.setGeometry(QtCore.QRect(155, 200, 91, 28))
         self.pushButton.setObjectName("OK")
 
         self.retranslateUi(Form)
@@ -4934,7 +4973,7 @@ class Mensagem(QtWidgets.QWidget):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Mensagem de Aviso!"))
+        Form.setWindowTitle(_translate("Form", "Mensagem de Aviso"))
         self.label.setText(_translate("Form", self.msg))
         self.pushButton.setText(_translate("Form", "OK"))
 
@@ -5089,6 +5128,278 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
         cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
         return cellinfo
 
+#=======================================================================================================
+class Ui_BaixaManual(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setFixedSize(573, 423)
+
+        self.fontLabel = QtGui.QFont()
+        self.fontLabel.setFamily("Arial")
+        self.fontLabel.setPointSize(12)
+        self.fontLabel.setBold(True)
+        self.fontLabel.setWeight(75)
+
+        self.fontLabel1 = QtGui.QFont()
+        self.fontLabel1.setFamily("Arial")
+        self.fontLabel1.setPointSize(9)
+        self.fontLabel1.setBold(True)
+        self.fontLabel1.setWeight(75)
+
+        self.fontCampos = QtGui.QFont()
+        self.fontCampos.setFamily("Arial")
+        self.fontCampos.setPointSize(9)
+        self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
+
+        self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
+        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(435, 140, 111, 28))#==================
+        self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
+
+        self.label_qtd = QtWidgets.QLabel(Form)
+        self.label_qtd.setGeometry(QtCore.QRect(30, 110, 71, 16))
+        self.label_qtd.setObjectName("label_qtd")
+        self.label_qtd.setVisible(False)
+
+        self.lineEdit_Qtd = QtWidgets.QLineEdit(Form)
+        self.lineEdit_Qtd.setGeometry(QtCore.QRect(115, 102, 120, 25))
+        self.lineEdit_Qtd.setObjectName("Campo  Quantidade")
+        self.lineEdit_Qtd.setToolTip("Digite a quantidade desejada \ndo item à ser retirado")
+        self.lineEdit_Qtd.setPlaceholderText("QTD do item")
+        self.lineEdit_Qtd.setFont(self.fontCampos)
+        self.lineEdit_Qtd.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_Qtd))
+        self.lineEdit_Qtd.setVisible(False)
+
+#===========================
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(40, 250,500, 146))
+        self.tabela.setColumnCount(10)  # Set dez columns
+        self.tabela.setHorizontalHeaderLabels(
+            ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Peso", "Unid", "Fabricante", "Fornecedor"])
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+#============================
+        self.label_Item = QtWidgets.QLabel(Form)
+        self.label_Item.setGeometry(QtCore.QRect(63, 70, 41, 20))
+        self.label_Item.setObjectName("label_Item")
+
+        self.lineEdit_Nome = QtWidgets.QLineEdit(Form)
+        self.lineEdit_Nome.setGeometry(QtCore.QRect(115, 70, 310, 25))
+        self.lineEdit_Nome.setObjectName("Campo Nome ou lote")
+        self.lineEdit_Nome.setToolTip("Digite o nome ou lote do item à ser retirado")
+        self.lineEdit_Nome.setPlaceholderText("Digite o nome ou lote do item")
+        self.lineEdit_Nome.setFont(self.fontCampos)
+        self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9]+"), self.lineEdit_Nome))
+
+        self.label_Erro = QtWidgets.QLabel(Form)
+        self.label_Erro.setGeometry(QtCore.QRect(30, 130, 340, 20))
+        self.label_Erro.setObjectName("label_Erro")
+        self.label_Erro.setFont(self.fontLabel1)
+
+        self.label_3 = QtWidgets.QLabel(Form)
+        self.label_3.setGeometry(QtCore.QRect(30, 220, 341, 20))
+        self.label_3.setFont(self.fontLabel)
+        self.label_3.setObjectName("Total de Itens")
+
+        self.label_6 = QtWidgets.QLabel(Form)
+        self.label_6.setFont(self.fontLabel)
+        self.label_6.setGeometry(QtCore.QRect(150,220, 341, 20))
+        self.label_6.setObjectName("Total de vencidos")
+
+        self.pushButton_limpar = QtWidgets.QPushButton(Form)
+        self.pushButton_limpar.setGeometry(QtCore.QRect(435, 170, 111, 28))#===============
+        self.pushButton_limpar.setObjectName("pushButton_limpar")
+
+
+        self.pushButton_retirar = QtWidgets.QPushButton(Form)
+        self.pushButton_retirar.setGeometry(QtCore.QRect(435, 200, 111, 28))#===========
+        self.pushButton_retirar.setObjectName("pushButton_retirar")
+        self.pushButton_retirar.setVisible(False)
+
+#============
+        self.pushButton_buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_buscar.setGeometry(QtCore.QRect(435, 70, 111, 28))#===========
+        self.pushButton_buscar.setObjectName("pushButton_buscar")
+        self.pushButton_buscar.clicked.connect(self.lineEdit_Nome.copy)
+#=============
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Baixa Item"))
+        self.label_qtd.setText(_translate("Form", "Quantidade:"))
+        self.label_Item.setText(_translate("Form", "Item:"))
+        self.pushButton_limpar.setText(_translate("Form", "Limpar"))
+        self.pushButton_retirar.setText(_translate("Form", "Retirar"))
+        self.pushButton_buscar.setText(_translate("Form", "Buscar"))#======
+        self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
+
+
+
+class BaixaManual(QtWidgets.QWidget, Ui_BaixaManual):
+
+    switch_window = QtCore.pyqtSignal()#MENU
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_MenuPrin.clicked.connect(self.telaMenuPrincipal)
+        self.pushButton_retirar.clicked.connect(self.retirarItem)
+        self.pushButton_limpar.clicked.connect(self.limparCampos)
+        self.pushButton_buscar.clicked.connect(self.buscaMedicamentos)
+    
+    def limparCampos(self):
+        self.label_Erro.clear()
+        self.lineEdit_Qtd.setVisible(False)
+        self.label_qtd.setVisible(False)
+        self.tabela.clear()
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.lineEdit_Nome.clear()
+        self.lineEdit_Qtd.clear()
+        self.pushButton_retirar.setVisible(False)
+        self.label_3.setVisible(False)
+        self.label_6.setVisible(False)
+
+    def buscaMedicamentos(self):
+
+        loteNome=self.lineEdit_Nome.text()
+        item=Item()
+        if loteNome:
+            if item.validaLoteNomeItem(loteNome):
+                item.recuperaBDitem(loteNome)
+                item.recuperaItemBDitem(loteNome)
+
+                if item.validaLoteItem(loteNome):
+                    self.pushButton_retirar.setVisible(True)
+                    self.label_qtd.setVisible(True)
+                    self.lineEdit_Qtd.setVisible(True)
+
+                self.preencheTabela(item)
+                self.label_3.setVisible(True)
+                self.label_3.setText("Total: "+str(self.calculaQuantidade(item)))
+                if self.calculaVencidos(item) > 0:
+                    self.label_6.setText("Vencidos: "+str(self.calculaVencidos(item)))
+            
+                self.tabela.resizeColumnsToContents()
+                self.tabela.resizeRowsToContents()
+            else:
+                self.label_Erro.setText("Produto não encontrado")
+                self.label_Erro.setStyleSheet('QLabel {color: red}')
+        else:
+            self.limparCampos()
+
+    def preencheTabela(self, item):
+        dados = item.getItem()
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            if dados[num_linha][10] == 0 and dados[num_linha][3] > 0:  # preenche tabela se nao estiver vencido e se não estiver zerado
+                for num_coluna, dado in enumerate(linha_dado):
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+            else:
+                self.tabela.hideRow(num_linha)
+
+        for linha in range(len(dados)):#Define como vencido as datas ultrapassadas
+            vencido = "VENCIDO"
+            self.tabela.setItem(linha, 7, self.formatCell(str(dados[linha][7]).lower()))#Coluna 7 é a coluna da unidade necessária estar em minuscula
+            if dados[linha][5] < date.today():
+                self.tabela.setItem(linha, 5, self.formatCell(str(vencido)))
+            else:
+                dataVenc = dados[linha][5].strftime('%d/%m/%Y')
+                self.tabela.setItem(linha, 5, self.formatCell(dataVenc))
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(10):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+    def calculaQuantidade(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] > date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        return soma
+
+    def calculaVencidos(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] < date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        if soma > 0:
+            self.label_Erro.setText("DESPREZE OS MEDICAMENTOS VENCIDOS!")
+            self.label_Erro.setStyleSheet('QLabel {color: red}')
+        return soma
+
+    def retirarItem(self):
+        loteNome = self.lineEdit_Nome.text()
+        qtdDigitada = self.lineEdit_Qtd.text()
+        item = Item()
+        if loteNome and int (qtdDigitada)>0:
+            item=Item()
+            item.recuperaBDitem(loteNome)            
+        
+            if item.validaLoteItem(loteNome):
+                item.setLote(loteNome)
+                qtd=item.getQtdItem()[0][0]
+                decremento = int(qtd)-int(qtdDigitada)
+                qtdDigitada=int (qtdDigitada)
+                
+                if int(qtdDigitada) > int(item.getQtdItem()[0][0]):
+                    Mensagem.msg="Valor declarado maior que o disponível"
+                    Mensagem.cor="black"
+                    Mensagem.img=4
+                if decremento > int (item.getQtdMinima()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!"
+                    Mensagem.cor="black"
+                    Mensagem.img=1
+
+                if decremento > 0 and decremento < int (item.getQtdMinima()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!\n Quantidade minima atingida."
+                    Mensagem.cor="black"
+                    Mensagem.img=2
+                if decremento == 0:
+                    Mensagem.msg="Retirado com sucesso!\n Não há mais saldo deste lote em estoque."
+                    Mensagem.cor="black"
+                    Mensagem.img=3
+
+                self.switch_window_2.emit()
+                if decremento>=0:
+                    item.updateQtdItem(decremento)
+                self.limparCampos()
+
+        else:
+            print("qtd digitada<0")
+            self.limparCampos()
+
+
+
+    def telaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def copiaCampos(self):
+        self.lineEdit_Qtd.copy()
+        self.lineEdit_Nome.copy()
+
+#===========================================================================================================================
+
+
 #=========================================================================================================================
 
 class Ui_FormMenuPrincipal(object):
@@ -5116,19 +5427,22 @@ class Ui_FormMenuPrincipal(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label = QtWidgets.QLabel(Form)
         self.label.setFont(self.fontLabel)
         self.label.setStyleSheet('QLabel {color: gray')
         self.label.setGeometry(30, 10, 150, 30)
-        #self.label.setFont(self.fontCampos)
+        self.label.setFont(self.fontCampos)
         self.label.setObjectName("Usuário")
 
         self.groupBox = QtWidgets.QGroupBox(Form)
-        self.groupBox.setGeometry(QtCore.QRect(290, 150, 251, 261))
+        self.groupBox.setGeometry(QtCore.QRect(20, 212, 251, 200))
         self.groupBox.setObjectName("groupBox")
 
         self.pushButton_VisuPac = QtWidgets.QPushButton(self.groupBox)
@@ -5146,10 +5460,10 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_EditPac.setObjectName("pushButton_8")
         self.pushButton_EditPac.setToolTip("Alterar os dados dos pacientes")
 
-        self.pushButton_EditPresc = QtWidgets.QPushButton(self.groupBox)
-        self.pushButton_EditPresc.setGeometry(QtCore.QRect(20, 200, 211, 28))
-        self.pushButton_EditPresc.setObjectName("pushButton_retirar")
-        self.pushButton_EditPresc.setToolTip("Alterar os dados das prescrições")
+        self.pushButton_BaixaManual = QtWidgets.QPushButton(self.groupBox)
+        self.pushButton_BaixaManual.setGeometry(QtCore.QRect(20, 200, 211, 28))
+        self.pushButton_BaixaManual.setObjectName("pushButton_retirar")
+        self.pushButton_BaixaManual.setToolTip("Realizar baixa manual de \n um medicamento especifico")
 
         self.pushButton_CadPresc = QtWidgets.QPushButton(self.groupBox)
         self.pushButton_CadPresc.setGeometry(QtCore.QRect(20, 160, 211, 28))
@@ -5157,7 +5471,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_CadPresc.setToolTip("Cadastrar novas prescrições")
 
         self.groupBox_2 = QtWidgets.QGroupBox(Form)
-        self.groupBox_2.setGeometry(QtCore.QRect(30, 170, 231, 101))
+        self.groupBox_2.setGeometry(QtCore.QRect(300, 170, 231, 101))
         self.groupBox_2.setObjectName("groupBox_2")
 
         self.pushButton_EditItem = QtWidgets.QPushButton(self.groupBox_2)
@@ -5171,7 +5485,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_CadItem.setToolTip("Cadastrar novos itens")
 
         self.groupBox_3 = QtWidgets.QGroupBox(Form)
-        self.groupBox_3.setGeometry(QtCore.QRect(30, 60, 231, 101))
+        self.groupBox_3.setGeometry(QtCore.QRect(30, 60, 231, 140))
         self.groupBox_3.setObjectName("groupBox_3")
 
         self.pushButton_VisuEst = QtWidgets.QPushButton(self.groupBox_3)
@@ -5184,8 +5498,13 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_BaixEst.setObjectName("pushButton_limpar")
         self.pushButton_BaixEst.setToolTip("Retirar item de estoque")
 
+        self.pushButton_BaixaManual = QtWidgets.QPushButton(self.groupBox_3)
+        self.pushButton_BaixaManual.setGeometry(QtCore.QRect(10, 95, 211, 28))
+        self.pushButton_BaixaManual.setObjectName("pushButton_retirar")
+        self.pushButton_BaixaManual.setToolTip("Realizar baixa manual de \n um medicamento especifico")
+
         self.groupBox_4 = QtWidgets.QGroupBox(Form)
-        self.groupBox_4.setGeometry(QtCore.QRect(30, 280, 231, 131))
+        self.groupBox_4.setGeometry(QtCore.QRect(300, 280, 231, 131))
         self.groupBox_4.setObjectName("groupBox_4")
         self.pushButton_EditUsu = QtWidgets.QPushButton(self.groupBox_4)
         self.pushButton_EditUsu.setGeometry(QtCore.QRect(20, 55, 201, 28))
@@ -5214,14 +5533,14 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_VisuPac.setText(_translate("Form", "Visualizar Pacientes"))
         self.pushButton_CadPac.setText(_translate("Form", "Cadastrar Paciente"))
         self.pushButton_EditPac.setText(_translate("Form", "Editar Paciente"))
-        self.pushButton_EditPresc.setText(_translate("Form", ""))
+        self.pushButton_BaixaManual.setText(_translate("Form", "Baixa Manual"))
         self.pushButton_CadPresc.setText(_translate("Form", "Prescrição"))
         self.groupBox_2.setTitle(_translate("Form", "Produto / Medicamento"))
         self.pushButton_EditItem.setText(_translate("Form", "Editar Produto / Medicamento"))
         self.pushButton_CadItem.setText(_translate("Form", "Cadastrar Produto / Medicamento"))
         self.groupBox_3.setTitle(_translate("Form", "Estoque"))
         self.pushButton_VisuEst.setText(_translate("Form", "Visualizar estoque"))
-        self.pushButton_BaixEst.setText(_translate("Form", "Baixa em estoque"))
+        self.pushButton_BaixEst.setText(_translate("Form", "Baixa por Paciente"))
         self.groupBox_4.setTitle(_translate("Form", "Adminstração"))
         self.pushButton_EditUsu.setText(_translate("Form", "Editar Usuário"))
         self.pushButton_CadUsu.setText(_translate("Form", "Cadastro Usuário"))
@@ -5243,6 +5562,8 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
     switch_window_9 = QtCore.pyqtSignal()
     switch_window_10 = QtCore.pyqtSignal()
     switch_window_11 = QtCore.pyqtSignal()
+    switch_window_12 = QtCore.pyqtSignal()
+
 
 
     def __init__(self):
@@ -5260,6 +5581,10 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_VisuPac.clicked.connect(self.telaVisualizarPac)
         self.pushButton_VisuEst.clicked.connect(self.telaVisualizarEst)
         self.pushButton_Sair.clicked.connect(self.telaLogin)
+        self.pushButton_BaixaManual.clicked.connect(self.telaBaixaManual)
+
+    def telaBaixaManual(self):
+        self.switch_window_12.emit()
 
     def telaVisualizarPac(self):
         self.switch_window_10.emit()
@@ -5291,7 +5616,8 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
             self.switch_window_2.emit()#Abre janela de cadastro
         else:
             Mensagem.msg = "Usuario não tem permissão de acesso!"
-            Mensagem.cor = "red"
+            Mensagem.cor = "black"
+            Mensagem.img =4
             self.switch_window_3.emit()#Abre Janela de Mansagem
 
     def telaExcluirUsuario(self):
@@ -5306,7 +5632,8 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
             self.switch_window_4.emit()#Abre janela de Cadastro
         else:
             Mensagem.msg = "Usuário não tem permissão de acesso!"
-            Mensagem.cor = "red"
+            Mensagem.cor = "black"
+            Mensagem.img = 4
             self.switch_window_3.emit()#Abre janela de Edição
 
     def telaCadastroProdEMed(self):
@@ -5336,9 +5663,12 @@ class Ui_FormLogin(object):
         fontError.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label_1 = QtWidgets.QLabel(Form)
         self.label_1.setObjectName("Nome")
@@ -5446,11 +5776,9 @@ class Controller:
         self.login.show()
 
     def fechar_menu(self):
-        print("ok")
+
         app=sys.executable
-        print("okok")
         os.execl(app,app, *sys.argv)
-        print("okokok")
 
     def show_main(self):
         self.menu = MenuPrincipal()
@@ -5466,6 +5794,8 @@ class Controller:
         self.menu.switch_window_9.connect(self.fechar_menu)
         self.menu.switch_window_10.connect(self.show_visualiza_pac)
         self.menu.switch_window_11.connect(self.show_visualiza_est)
+        self.menu.switch_window_12.connect(self.show_baixa_manual)
+
         self.login.close()
         self.menu.show()
 
@@ -5485,6 +5815,12 @@ class Controller:
         self.visualizarEst.switch_window.connect(self.show_main)
         self.visualizarEst.switch_window_2.connect(self.show_msg)
         self.visualizarEst.show()
+
+    def show_baixa_manual(self):
+        self.baixaMan = BaixaManual()
+        self.baixaMan.switch_window.connect(self.show_main)
+        self.baixaMan.switch_window_2.connect(self.show_msg)
+        self.baixaMan.show()
 
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()

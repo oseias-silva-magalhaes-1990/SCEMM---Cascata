@@ -658,7 +658,7 @@ class Item(object):
         return self.nomeFabricante
 
     def getPesoItem(self):
-        return self.pesof
+        return self.peso
 
     def getUnidadeItem(self):
         return self.unidade
@@ -2119,12 +2119,13 @@ class BaixaItem(QtWidgets.QWidget):
                 saida.setIdPaciente(paciente.getPaciente()[0][0])
                 saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
                 for i in range(len(self.vetMed)):
-                    if self.self.vetMed[i][1]
-                    saida.setQtdSaida(self.vetMed[i][1])#<------
-                    item.recuperaBDitem(self.vetMed[i][2])#<------
-                    saida.setIdItem(item.getItemID()[0][0])#<------
-                    saida.setIdPrescricao(self.prescricao_id[i])
-
+                    if self.vetMed[i][1] and self.vetMed[i][2] and self.vetMed[i][3]:
+                        saida.setQtdSaida(self.vetMed[i][1])#<------
+                        item.recuperaBDitem(self.vetMed[i][2])#<------
+                        decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[i][1])#qtdEstoque-qtdDigitada
+                        item.updateQtdItem(decremento)#Atualiza qtd no banco
+                        saida.setIdItem(item.getItemID()[0][0])#<------
+                        saida.setIdPrescricao(self.prescricao_id[i])
                     if self.vetMed[i][3] == 1:
                         saida.gravaBDsaida()
             else:
@@ -2141,7 +2142,7 @@ class BaixaItem(QtWidgets.QWidget):
     	paciente = Paciente()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.prescricao.setIdPaciente(self.paciente.getPaciente()[0][0])
+            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
             self.prescricao.recuperaBDprescricao()
             self.preencheCampos(self.prescricao.getPrescricao())
     	else:

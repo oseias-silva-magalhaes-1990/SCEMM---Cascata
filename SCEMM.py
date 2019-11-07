@@ -2674,7 +2674,7 @@ class TelaPrescricao(QtWidgets.QWidget):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Cadastro de prescrição"))
+        Form.setWindowTitle(_translate("Form", "Prescrição - Cadastro e edição"))
         Form.setToolTip(_translate("Form", "Adicionar mais campos"))
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
@@ -3186,7 +3186,7 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
 
         self.labelErro = QtWidgets.QLabel(Form)
-        self.labelErro.setGeometry(QtCore.QRect(10, 260, 300, 25))
+        self.labelErro.setGeometry(QtCore.QRect(10, 260, 400, 25))
         self.labelErro.setFont(self.fontLabel)
         self.labelErro.setObjectName("Erro")
 
@@ -3250,7 +3250,7 @@ class Ui_FormCadProdEMed(object):
 
         self.dateEdit = QtWidgets.QDateEdit(Form)
         self.dateEdit.setGeometry(QtCore.QRect(410, 160, 131, 22))
-        self.dateEdit.setToolTip("Data para o vencimento do Item à ser armaznado")
+        self.dateEdit.setToolTip("Data para o vencimento do Item à ser armazenado")
         self.dateEdit.setFont(self.fontCampos)
         self.dateEdit.setObjectName("dateEdit_Data_nasc")
         self.dataDefault()
@@ -3263,7 +3263,7 @@ class Ui_FormCadProdEMed(object):
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def dataDefault(self):
-        data = date.fromisoformat("1990-03-20")
+        data = date.fromisoformat("2019-01-01")
         self.dateEdit.setDate(data)
 
     def copiarCampos(self):
@@ -3335,7 +3335,6 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
         if nomeItem and lote and dataVenc and qtdMinima and quantidade:
             if dataVenc > dataAtual:
                 if item.validaLoteNomeItem(lote):#Verifica se existe um produto com esse item_id cadastrado
-                    self.labelErro.setStyleSheet('QLabel {color: red}')
                     self.labelErro.setText("Item com este Lote já está cadastrado!")
                 else:
                     self.labelErro.clear()
@@ -3571,23 +3570,23 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setFont(self.fontLabel)
         self.label_3.setStyleSheet('QLabel {color: red}')
-        self.label_3.setGeometry(QtCore.QRect(30, 300, 371, 131))
+        self.label_3.setGeometry(QtCore.QRect(30, 95, 371, 131))
         self.label_3.setObjectName("Mensagem de erro")
 
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(460, 160, 91, 28))
+        self.pushButton.setGeometry(QtCore.QRect(460, 190, 91, 28))
         self.pushButton.setObjectName("Limpar")
 
         self.pushButton_3 = QtWidgets.QPushButton(Form)
-        self.pushButton_3.setGeometry(QtCore.QRect(460, 195, 91, 28))
+        self.pushButton_3.setGeometry(QtCore.QRect(460, 225, 91, 28))
         self.pushButton_3.setObjectName("Cadastrar")
 
         self.pushButton_5 = QtWidgets.QPushButton(Form)
-        self.pushButton_5.setGeometry(QtCore.QRect(460, 230, 91, 28))
+        self.pushButton_5.setGeometry(QtCore.QRect(460, 260, 91, 28))
         self.pushButton_5.setObjectName("Menu Principal")
 
         self.groupBox = QtWidgets.QGroupBox(Form)
-        self.groupBox.setGeometry(QtCore.QRect(20, 20, 531, 141))
+        self.groupBox.setGeometry(QtCore.QRect(20, 20, 531, 160))
         self.groupBox.setObjectName("Informações de acesso")
 
         self.label_4 = QtWidgets.QLabel(self.groupBox)
@@ -3729,7 +3728,7 @@ class Ui_Form_EditProdMed(object):
         self.fontCampos.setCapitalization(3)
 
         self.label_3 = QtWidgets.QLabel(Form)
-        self.label_3.setGeometry(QtCore.QRect(550, 10, 100, 20))
+        self.label_3.setGeometry(QtCore.QRect(550, 10, 200, 20))
         self.label_3.setFont(self.fontLabel)
         self.label_3.setObjectName("Total de Itens")
 
@@ -3739,7 +3738,7 @@ class Ui_Form_EditProdMed(object):
 
         self.label_5 = QtWidgets.QLabel(Form)
         self.label_5.setFont(self.fontLabel)
-        self.label_5.setGeometry(QtCore.QRect(10, 245, 300, 20))
+        self.label_5.setGeometry(QtCore.QRect(10, 245, 350, 20))
         self.label_5.setObjectName("Medicamento vencido")
 
         self.label_6 = QtWidgets.QLabel(Form)
@@ -3772,7 +3771,7 @@ class Ui_Form_EditProdMed(object):
         self.lineEdit.setObjectName("nomeItem")
 
         self.tabela = QtWidgets.QTableWidget(Form)
-        self.tabela.setGeometry(QtCore.QRect(50, 110, 600, 146))
+        self.tabela.setGeometry(QtCore.QRect(50, 90, 600, 146))
         self.tabela.setColumnCount(10)     #Set dez columns
         self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante","Fornecedor"])
 
@@ -3927,6 +3926,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit.setText(item.getNomeItem()[0][0])
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit))
+        self.lineEdit.setToolTip("Nome do item")
 
         self.lineEdit_2 = QtWidgets.QLineEdit(Form)
         self.lineEdit_2.setGeometry(QtCore.QRect(160, 70, 131, 22))
@@ -3934,6 +3934,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_2.setText(str(item.getQtdItem()[0][0]))
         self.lineEdit_2.setFont(self.fontCampos)
         self.lineEdit_2.setValidator(QtGui.QIntValidator())
+        self.lineEdit_2.setToolTip("Quantidade do item que há em estoque")
 
         self.lineEdit_4 = QtWidgets.QLineEdit(Form)
         self.lineEdit_4.setGeometry(QtCore.QRect(160, 100, 131, 22))
@@ -3941,6 +3942,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_4.setText(str(item.getQtdMinima()[0][0]))
         self.lineEdit_4.setFont(self.fontCampos)
         self.lineEdit_4.setValidator(QtGui.QIntValidator())
+        self.lineEdit_4.setToolTip("Quantidade minima que deseja ser avisado")
 
         self.lineEdit_5 = QtWidgets.QLineEdit(Form)
         self.lineEdit_5.setGeometry(QtCore.QRect(160, 130, 131, 22))
@@ -3949,6 +3951,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_5.setFont(self.fontCampos)
         self.lineEdit_5.setMaxLength(30)
         self.lineEdit_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_5))
+        self.lineEdit_5.setToolTip("Numero de identificação fornecido pelo fabricante\nEscrito na embalagem")
 
         self.lineEdit_6 = QtWidgets.QLineEdit(Form)
         self.lineEdit_6.setGeometry(QtCore.QRect(160, 160, 131, 22))
@@ -3957,6 +3960,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_6.setFont(self.fontCampos)
         self.lineEdit_6.setMaxLength(20)
         self.lineEdit_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.lineEdit_6))
+        self.lineEdit_6.setToolTip("Empresa ou entidade que forneceu o item")
 
         self.lineEdit_3 = QtWidgets.QLineEdit(Form)
         self.lineEdit_3.setGeometry(QtCore.QRect(410, 70, 131, 22))
@@ -3965,6 +3969,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_3.setFont(self.fontCampos)
         self.lineEdit_3.setMaxLength(30)
         self.lineEdit_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z ]+"), self.lineEdit_3))
+        self.lineEdit_3.setToolTip("Empresa que produziu o item")
 
         self.lineEdit_7 = QtWidgets.QLineEdit(Form)
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
@@ -3972,6 +3977,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_7.setText(str(item.getPesoItem()[0][0]))
         self.lineEdit_7.setFont(self.fontCampos)
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
+        self.lineEdit_7.setToolTip("Peso do item, somente os numeros\nEX:125.00")
 
         self.lineEdit_8 = QtWidgets.QLineEdit(Form)
         self.lineEdit_8.setGeometry(QtCore.QRect(410, 130, 131, 22))
@@ -3979,6 +3985,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_8.setText(item.getUnidadeItem()[0][0])
         self.lineEdit_8.setFont(self.fontLabel)
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
+        self.lineEdit_8.setToolTip("Unidade de medida do item\nEX:mg, ml")
 
         self.label = QtWidgets.QLabel(Form)
         self.label.setFont(self.fontLabel)
@@ -4029,14 +4036,17 @@ class Ui_Form_EditProdMedInfo(object):
         self.pushButton_3 = QtWidgets.QPushButton(Form)
         self.pushButton_3.setGeometry(QtCore.QRect(460, 200, 91, 28))
         self.pushButton_3.setObjectName("Menu Principal")
+        self.pushButton_3.setToolTip("Voltar ao Menu Principal")
 
         self.pushButton_4 = QtWidgets.QPushButton(Form)
         self.pushButton_4.setGeometry(QtCore.QRect(460, 320, 91, 28))
         self.pushButton_4.setObjectName("Excluir")
+        self.pushButton_4.setToolTip("Exclui o item\n deixando-o inapto para consumo")
 
         self.pushButton_5 = QtWidgets.QPushButton(Form)
         self.pushButton_5.setGeometry(QtCore.QRect(460, 320, 91, 28))
         self.pushButton_5.setObjectName("Restaurar")
+        self.pushButton_5.setToolTip("Restaura o item\n deixando-o apto para consumo")
 
         if item.estaExcluido(EditarProdEMedInfo.lote):
             self.pushButton_4.setVisible(False)
@@ -4050,6 +4060,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.dateEdit.setDate(item.getDataVenc()[0][0])
         self.dateEdit.setFont(self.fontCampos)
         self.dateEdit.setObjectName("dateEdit_Data_nasc")
+        self.dateEdit.setToolTip("alterar data de nascimento")
 
         self.pushButton_2.clicked.connect(self.copiarCampos)
         self.pushButton_4.clicked.connect(self.copiarCampos)
@@ -5894,6 +5905,7 @@ class Controller:
 def main():
     app = QtWidgets.QApplication(sys.argv)
     controller = Controller()
+
     controller.show_login()
     sys.exit(app.exec_())
 

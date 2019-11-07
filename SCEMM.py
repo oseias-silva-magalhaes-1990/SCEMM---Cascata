@@ -2939,13 +2939,13 @@ class TelaPrescricao(QtWidgets.QWidget):
     def preencheCampos(self, prescricao):
     	self.limparCampos()
     	if len(prescricao)>0:
-    		self.line_med1.setText(prescricao[0][1])
+    		self.line_med1.setText(str(prescricao[0][1]))
     		self.line_qtd1.setText(str(prescricao[0][2]))
     		if prescricao[0][3] == 1:
     			self.checkBox.setChecked(True)
 
     	if len(prescricao)>1:
-    		self.line_med1_2.setText(prescricao[1][1])
+    		self.line_med1_2.setText(str(prescricao[1][1]))
     		self.line_qtd1_2.setText(str(prescricao[1][2]))
     		if prescricao[1][3] == 1:
     			self.checkBox_2.setChecked(True)

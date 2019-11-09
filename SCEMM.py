@@ -1238,6 +1238,7 @@ class Usuario(object):
 class BaixaItem(QtWidgets.QWidget):
     cont = 0
     switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -1259,13 +1260,13 @@ class BaixaItem(QtWidgets.QWidget):
         self.fontLabel.setFamily("Arial")
         self.fontLabel.setPointSize(12)
         self.fontLabel.setBold(True)
-        self.fontLabel.setWeight(75)
+        self.fontLabel.setWeight(25)
 
         fontQtd = QtGui.QFont()
-        fontQtd.setFamily("Times New Roman")
+        fontQtd.setFamily("Arial")
 
         fontMed = QtGui.QFont()
-        fontMed.setFamily("Perpetua Titling MT")
+        fontMed.setFamily("Arial")
 
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
         self.pushButton_MenuPrin.setGeometry(QtCore.QRect(460, 100, 91, 28))
@@ -1296,7 +1297,7 @@ class BaixaItem(QtWidgets.QWidget):
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setFont(self.fontLabel)
-        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
+        self.label_Erro.setGeometry(QtCore.QRect(50, 55, 450, 30))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
@@ -1323,6 +1324,23 @@ class BaixaItem(QtWidgets.QWidget):
         self.checkBox_2 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
         self.checkBox_2.setObjectName("checkBox_2")
         self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
+
+        self.label_nomePac = QtWidgets.QLabel(Form)
+        self.label_nomePac.setFont(self.fontLabel)
+        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
+        self.label_nomePac.setObjectName("label_nomePac")
+        self.label_nomePac.setText("Paciente:")
+
+        self.line_nomePac = QtWidgets.QLineEdit(Form)
+        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
+        self.line_nomePac.setObjectName("line_nomePac")
+        self.line_nomePac.setReadOnly(True)
+        self.line_nomePac.setMaxLength(15)
+        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
+        self.line_sobrenomePac.setReadOnly(True)
+        self.line_sobrenomePac.setMaxLength(40)
 
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
         self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
@@ -2484,32 +2502,50 @@ class BaixaItem(QtWidgets.QWidget):
                 self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
             else:#
             	for i in range((len(self.vetMed))):
-            		saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
-            		if self.vetMed[i][2]:
-            			saida.setQtdSaida(self.vetMed[i][1])
-            			saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
-            			saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-            			saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-            			decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
-            			item.setLote(self.vetMed[i][2])
-            			item.updateQtdItem(decremento)
-            			saida.setIdPrescricao(self.prescricao_id[i])
-            			item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-            			saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-            			saida.gravaBDsaida()
-            			self.pushButton_Retirar.setVisible(False)
-            			self.pushButton_RetirarRestante.setVisible(False)
-            		else:
-                		saida.setQtdSaida(0)
-                		saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
-	                	saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-	                	saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-	                	saida.setIdPrescricao(self.prescricao_id[i])
-	                	item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-	                	saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-	                	saida.gravaBDsaida()
-	                	self.pushButton_Retirar.setVisible(False)
-	                	self.pushButton_RetirarRestante.setVisible(False)
+                    saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
+                    if self.vetMed[i][2]:
+                        saida.setQtdSaida(self.vetMed[i][1])
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                        item.setLote(self.vetMed[i][2])
+                        item.updateQtdItem(decremento)
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    else:
+                        saida.setQtdSaida(0)
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+
+                    if saida.qtdRestante>0:
+                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=2
+                    else:
+                        if saida.qtdRestante==0:
+                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                            Mensagem.cor="black"
+                            Mensagem.img=1
+                            self.line_cpfPac.clear()
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+                    self.line_sobrenomePac.clear()
+                    self.line_nomePac.clear()
+
+
         else:
             self.label_Erro.setText("Paciente não está cadastrado!")
 
@@ -2559,31 +2595,48 @@ class BaixaItem(QtWidgets.QWidget):
                 self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
             else:
             	for i in range((len(self.vetMed))):
-            		saida.setQtdPrescrita(self.saida.getSaida()[i][1])
-            		print(self.vetMed[i][1])
-            		if self.vetMed[i][2]:
-            			saida.setQtdSaida(self.vetMed[i][1])
-            			saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
-            			decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
-            			saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-            			saida.setIdPaciente(self.saida.getSaida()[i][8])
-            			item.setLote(self.vetMed[i][2])
-            			item.updateQtdItem(decremento)
-            			saida.setIdPrescricao(self.saida.getSaida()[i][7])
-            			saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
-            			saida.atualizaBDsaida(self.saida.getSaida()[i][0])
-            			self.pushButton_Retirar.setVisible(False)
-            			self.pushButton_RetirarRestante.setVisible(False)
-            		else:
-                		saida.setQtdSaida(0)
-                		saida.setQtdRestante(self.vetMed[i][1])
-	                	saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-	                	saida.setIdPaciente(self.saida.getSaida()[i][8])
-	                	saida.setIdPrescricao(self.saida.getSaida()[i][7])
-	                	saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
-	                	saida.atualizaBDsaida(self.saida.getSaida()[i][0])
-	                	self.pushButton_Retirar.setVisible(False)
-	                	self.pushButton_RetirarRestante.setVisible(False)
+                    saida.setQtdPrescrita(self.saida.getSaida()[i][1])
+                    print(self.vetMed[i][1])
+                    if self.vetMed[i][2]:
+                        saida.setQtdSaida(self.vetMed[i][1])
+                        saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
+                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.saida.getSaida()[i][8])
+                        item.setLote(self.vetMed[i][2])
+                        item.updateQtdItem(decremento)
+                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    else:
+                        saida.setQtdSaida(0)
+                        saida.setQtdRestante(self.vetMed[i][1])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.saida.getSaida()[i][8])
+                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    if saida.qtdRestante>0:
+                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=2
+                    else:
+                        if saida.qtdRestante==0:
+                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                            Mensagem.cor="black"
+                            Mensagem.img=1
+                            self.line_cpfPac.clear()
+
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+                    self.line_sobrenomePac.clear()
+                    self.line_nomePac.clear()
+
         else:
             self.label_Erro.setText("Paciente não está cadastrado!")
 
@@ -2592,6 +2645,8 @@ class BaixaItem(QtWidgets.QWidget):
     	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
+            self.line_nomePac.setText(paciente.getPaciente()[0][1])
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
@@ -5153,7 +5208,7 @@ class EditarUsuario(QtWidgets.QWidget):
         nomeUsu = self.lineEdit.text()
         usuario = Usuario()
         print(EditarUsuarioInfo.nomeAntigo)
-        if EditarUsuarioInfo.nomeAntigo != "" and usuario.validaNomeUsuario(nomeUsu):
+        if EditarUsuarioInfo.nomeAntigo != "":
             self.pushButton_3.setVisible(False)
             self.switch_window_2.emit()  # Chama a janela para editar as informações do usuario_id
         else:
@@ -6081,7 +6136,17 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
 
     def telaExcluirUsuario(self):
         EditarUsuario.excluirUsu = True
-        self.switch_window_4.emit()
+        usu = Usuario()
+        if usu.validaEadmin(Usuario.usuLogado):
+
+            self.switch_window_4.emit()#Abre janela de Cadastro
+        else:
+            Mensagem.msg = "Usuário não tem permissão de acesso!"
+            Mensagem.cor = "black"
+            Mensagem.img = 4
+            self.switch_window_3.emit()
+
+
 
     def telaEditarUsuario(self):
         EditarUsuario.excluirUsu = False
@@ -6286,6 +6351,7 @@ class Controller:
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()
         self.baixaItem.switch_window.connect(self.show_main)
+        self.baixaItem.switch_window_2.connect(self.show_msg)
         self.baixaItem.show()
 
     def show_edit_usu(self):

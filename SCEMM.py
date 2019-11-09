@@ -16,12 +16,6 @@ class BDprescricao(object):
         dados = (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id)
         self.cursor.execute("INSERT INTO prescricao (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id) VALUES (%s, %s, %s, %s, %s)", dados)
         self.db.commit()
-        self.db.close()
-
-    def apagaPrescricaoAntiga(self, paciente_id):
-    	self.cursor.execute("DELETE FROM prescricao WHERE paciente_id = %s", paciente_id)
-    	self.db.commit()
-
 
     def existePrescricao(self, paciente_id, nomeItem):
         dados = (paciente_id, nomeItem)
@@ -32,11 +26,16 @@ class BDprescricao(object):
         else:
             return True
 
-    def atualizaPrescricaoBD(self, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
-        dados = (qtdAdm, fazUso, usuario_id, paciente_id, nomeItem)
-        self.cursor.execute("UPDATE prescricao SET qtdAdm = %s, fazUso = %s, usuario_id = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+    def atualizaPrescricaoBD(self, nomeAntigo, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
+        dados = (nomeItem, paciente_id, nomeAntigo)
+        self.cursor.execute("UPDATE prescricao SET nomeItem = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (qtdAdm, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET qtdAdm = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (fazUso, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET fazUso = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (usuario_id, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET usuario_id = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
         self.db.commit()
-        self.db.close()
 
     def recuperaPrescPaciente(self, paciente_id):
     	self.cursor.execute("SELECT * FROM prescricao WHERE paciente_id = %s", paciente_id)
@@ -119,7 +118,6 @@ class BDitem(object):
     def restauraExcluido(self,lote):
         self.cursor.execute("UPDATE item SET excluido = 0 WHERE lote = %s", lote)
         self.db.commit()
-        self.db.close()
 
     def itemBDexcluido(self,lote):
         self.cursor.execute("SELECT item_id FROM item WHERE lote = %s AND excluido = 1", lote)#Verifica se existe o item_id
@@ -370,6 +368,7 @@ class BDusuario(object):
         self.db.commit()
 
     def excluiBDusuario(self, nome):
+        print(nome)
         self.cursor.execute("UPDATE usuario SET excluido = 1 WHERE nome = %s", nome)
         self.db.commit()
 
@@ -443,7 +442,7 @@ class BDusuario(object):
     def verificaEadmin(self, nome):  # verifica se a senha pertence ao nome do existente
         self.cursor.execute("SELECT eadmin FROM usuario WHERE nome = %s", nome)
         eadmin = self.cursor.fetchone()
-        if eadmin[0] == 1:
+        if eadmin[0]:
             return True
         else:
             return False
@@ -451,7 +450,7 @@ class BDusuario(object):
     def verificaExcluido(self, nome):  # verifica se a senha pertence ao nome do existente
         self.cursor.execute("SELECT excluido FROM usuario WHERE nome = %s", nome)
         excluido = self.cursor.fetchone()
-        if excluido[0] == 1:
+        if excluido[0]:
             return True
         else:
             return False
@@ -531,118 +530,6 @@ class Entrada(object):
         bdEnt.db.close()
 
 #=======================================================================================================================
-class Usuario(object):
-    usuLogado = ""
-
-    def __init__(self):
-        self.nome = ""
-        self.senha = ""
-        self.excluido = ""
-        self.idUsu = ""
-        self.usuario = None
-
-    def setNomeUsuario(self,nomeUsu):
-        self.nome = nomeUsu
-
-    def setSenhaUsuario(self,senhaUsu):
-        self.senha = senhaUsu
-
-    def getNomeUsuario(self):
-        return self.nome
-
-    def getSenhaUsuario(self):
-        return self.senha
-
-    def getUsuLogado(self):
-        return self.usuLogado
-
-    def getEadmin(self):
-        return self.eadmin
-
-    def getIDusu(self):
-        return self.idUsu
-
-    def validaNomeUsuario(self, nome):
-        self.nome = nome
-        bdUsu = BDusuario()
-
-        if bdUsu.verificaNomeUsuario(self.nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaSenhaUsuario(self, senha):
-        self.senha = senha
-        bdUsu = BDusuario()
-        if bdUsu.verificaSenhaUsuario(self.nome, self.senha):
-            self.recuperaBDUsuario(self.nome)
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaEadmin(self,nome):
-        bdUsu = BDusuario()
-        if bdUsu.verificaEadmin(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaExcluido(self,nome):
-        bdUsu = BDusuario()
-        if bdUsu.verificaExcluido(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def insereBDusuario(self):
-        bdUsu = BDusuario()
-        bdUsu.insereBDUsuario(self.nome, self.senha)
-        bdUsu.db.close()
-
-    def insereAdminUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.insereBDeadmin(self.nome)
-        bdUsu.db.close()
-
-    def retiraAdminUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.retiraBDeadmin(self.nome)
-        bdUsu.db.close()
-
-    def updateNomeBDusuario(self,nomeNovo):
-        bdUsu = BDusuario()
-        bdUsu.atualizaNomeUsuario(self.nome, nomeNovo)
-        self.nome = nomeNovo
-        bdUsu.db.close()
-
-    def updateSenhaBDusuario(self, senhaNova):
-        bdUsu = BDusuario()
-        bdUsu.atualizaSenhaUsuario(self.nome, senhaNova)
-        bdUsu.db.close()
-
-    def excluiUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.excluiBDusuario(self.nome)
-        bdUsu.db.close()
-
-    def restauraUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.restauraBDusuario(self.nome)
-        bdUsu.db.close()
-
-
-    def recuperaIDusuario(self, nomeUsu):
-        bdUsu = BDusuario()
-        return bdUsu.recuperaIDusuarioBD(nomeUsu)
-
 
 #=======================================================================================================================
 class Item(object):
@@ -814,7 +701,7 @@ class Item(object):
 
     def restauraItem(self, lote):
         bdItem = BDitem()
-        bdItem.selectAllitem(lote)
+        bdItem.restauraExcluido(lote)
         bdItem.db.close()
 
     def recuperaIDitem(self, lote):
@@ -973,6 +860,7 @@ class Prescricao(object):
     def __init__(self):
         self.FazUso = ""
         self.qtdAdmin = ""
+        self.nomeAntigo = ""
         self.nomeItem = ""
         self.id_usuario = ""
         self.id_Paciente = ""
@@ -983,6 +871,9 @@ class Prescricao(object):
 
     def setQtdAdm(self, QtdAdm):
         self.qtdAdmin = QtdAdm
+
+    def setNomeAntigo(self, nomeAntigo):
+        self.nomeAntigo = nomeAntigo
 
     def setNomeItem(self, nomeItem):
         self.nomeItem = nomeItem
@@ -1016,13 +907,17 @@ class Prescricao(object):
     	return self.prescricao
 #=============================================================
 
-    def gravaBDprescricao(self):
+    def verificaPrescricao(self, id_Paciente, nomeItem):
         dbPresc = BDprescricao()
-        if dbPresc.existePrescricao(self.id_Paciente, self.nomeItem):
-        	dbPresc.apagaPrescricaoAntiga(self.id_Paciente)
-        	dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
-        else:
-            dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        return dbPresc.existePrescricao(id_Paciente, nomeItem)
+
+    def gravaBDprescricao(self, id_paciente):
+        dbPresc = BDprescricao()
+        dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+
+    def atualizaPrescricao(self):
+        dbPresc = BDprescricao()
+        dbPresc.atualizaPrescricaoBD(self.nomeAntigo, self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
 
     def recuperaBDprescricao(self):
     	dbPresc = BDprescricao()
@@ -1185,12 +1080,7 @@ class Usuario(object):
 
     def validaExcluido(self,nome):
         bdUsu = BDusuario()
-        if bdUsu.verificaExcluido(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
+        return bdUsu.verificaExcluido(nome)
 
     def insereBDusuario(self):
         bdUsu = BDusuario()
@@ -2676,6 +2566,7 @@ class TelaPrescricao(QtWidgets.QWidget):
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
+        self.prescricao = Prescricao()
         self.setupUi(self)
 
 
@@ -2734,6 +2625,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_nomePac.setObjectName("line_nomePac")
         self.line_nomePac.setReadOnly(True)
         self.line_nomePac.setMaxLength(15)
+
         self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
         self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
         self.line_sobrenomePac.setObjectName("line_sobrenomePac")
@@ -3540,7 +3432,7 @@ class TelaPrescricao(QtWidgets.QWidget):
     	self.vetMed = []
     	paciente = Paciente()
     	usuario = Usuario()
-    	prescricao = Prescricao()
+    	#prescricao = Prescricao()
     	item = Item()
     	if paciente.validaCPFpaciente(self.line_cpfPac.text()):
             self.lerSeqCampos()
@@ -3554,13 +3446,22 @@ class TelaPrescricao(QtWidgets.QWidget):
                     medicamentoInvalido = indice
             if not medicamentoInvalido and not medicamentoDuplicado:
                 paciente.recuperaBDpaciente(self.line_cpfPac.text())
-                prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-                prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+                self.prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
                 for indice in range(len(self.vetMed)):
-                    prescricao.setNomeItem(self.vetMed[indice][0])
-                    prescricao.setQtdAdm(self.vetMed[indice][1])
-                    prescricao.setFazUso(self.vetMed[indice][2])
-                    prescricao.gravaBDprescricao()
+                    if indice < int(len(self.prescricao.getPrescricao())):
+                        if self.prescricao.verificaPrescricao(paciente.getPaciente()[0][0], self.prescricao.getPrescricao()[indice][1]):
+                            self.prescricao.setNomeAntigo(self.prescricao.getPrescricao()[indice][1])
+                            self.prescricao.setNomeItem(self.vetMed[indice][0])
+                            self.prescricao.setQtdAdm(self.vetMed[indice][1])
+                            self.prescricao.setFazUso(self.vetMed[indice][2])
+                            self.prescricao.atualizaPrescricao()
+                    else:
+                        self.prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        self.prescricao.setNomeItem(self.vetMed[indice][0])
+                        self.prescricao.setQtdAdm(self.vetMed[indice][1])
+                        self.prescricao.setFazUso(self.vetMed[indice][2])
+                        self.prescricao.gravaBDprescricao(paciente.getPaciente()[0][0])
                 Mensagem.msg="Prescricao salva com sucesso!"
                 Mensagem.cor="black"
                 Mensagem.img=1
@@ -3577,11 +3478,10 @@ class TelaPrescricao(QtWidgets.QWidget):
     def buscarPrescricao(self):
         paciente = Paciente()
         if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            prescricao = Prescricao()
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-            prescricao.recuperaBDprescricao()
-            self.preencheCampos(prescricao.getPrescricao())
+            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+            self.prescricao.recuperaBDprescricao()
+            self.preencheCampos(self.prescricao.getPrescricao())
             print(paciente.getPaciente())
             self.line_nomePac.setText(paciente.getPaciente()[0][1])
             self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
@@ -5131,21 +5031,20 @@ class EditarUsuario(QtWidgets.QWidget):
         self.pushButton_3.clicked.connect(self.editaUsuario)
 
         self.pushButton_4.clicked.connect(self.lineEdit.copy)
-        self.pushButton_4.clicked.connect(self.excluiUsuario)
+        self.pushButton_4.clicked.connect(self.excluirUsuario)
 
         self.pushButton_6.clicked.connect(self.lineEdit.copy)
-        self.pushButton_6.clicked.connect(self.restauraUsuario)
+        self.pushButton_6.clicked.connect(self.restaurarUsuario)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def limpaJanela(self):
-        self.lineEdit.clear()
         self.label_3.clear()
         self.pushButton_3.setVisible(False)
         self.campoTexto.clear()
 
-    def excluiUsuario(self):
+    def excluirUsuario(self):
         nome = self.lineEdit.text()
         usuario = Usuario()
         usuario.setNomeUsuario(nome)
@@ -5155,10 +5054,12 @@ class EditarUsuario(QtWidgets.QWidget):
         Mensagem.img = 1
         self.pushButton_4.setVisible(False)  # Desliga Botao Excluir
         self.pushButton_6.setVisible(True)  # Liga botao Restaurar
-        self.realizaBusca()
         self.switch_window_3.emit()
+        self.limpaJanela()
+        self.lineEdit.clear()
 
-    def restauraUsuario(self):
+
+    def restaurarUsuario(self):
         nome = self.lineEdit.text()
         usuario = Usuario()
         usuario.setNomeUsuario(nome)
@@ -5168,8 +5069,9 @@ class EditarUsuario(QtWidgets.QWidget):
         Mensagem.img = 1
         self.pushButton_4.setVisible(True)  # liga Botao Excluir
         self.pushButton_6.setVisible(False)  # Desliga botao restaurar
-        self.realizaBusca()
         self.switch_window_3.emit()
+        self.limpaJanela()
+        self.lineEdit.clear()
 
     def realizaBusca(self):
         nomeUsu = self.lineEdit.text()
@@ -6275,7 +6177,7 @@ class LoginUsu(QtWidgets.QWidget, Ui_FormLogin):
         camponome = self.lineEdit_1.text()#admin
         camposenha = self.lineEdit_2.text()#123456
         usuario = Usuario()
-        if usuario.validaNomeUsuario(camponome):
+        if usuario.validaNomeUsuario(camponome) and not usuario.validaExcluido(camponome):
             if usuario.validaSenhaUsuario(camposenha):
                 acesso = RegistroAcessos(camponome)
                 acesso.logAcesso()#Envia o nome do usuario para a classe Log

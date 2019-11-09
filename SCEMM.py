@@ -915,15 +915,17 @@ class Prescricao(object):
     def gravaBDprescricao(self, id_paciente):
         dbPresc = BDprescricao()
         dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        dbPresc.db.close()
 
     def atualizaPrescricao(self):
         dbPresc = BDprescricao()
         dbPresc.atualizaPrescricaoBD(self.nomeAntigo, self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        dbPresc.db.close()
 
     def recuperaBDprescricao(self):
-    	dbPresc = BDprescricao()
-    	self.prescricao = dbPresc.recuperaPrescPaciente(self.id_Paciente)
-
+        dbPresc = BDprescricao()
+        self.prescricao = dbPresc.recuperaPrescPaciente(self.id_Paciente)
+        dbPresc.db.close()
 
 
 #===================================================================================================================
@@ -2511,12 +2513,13 @@ class BaixaItem(QtWidgets.QWidget):
                         saida.atualizaBDsaida(self.saida.getSaida()[i][0])
                         self.pushButton_Retirar.setVisible(False)
                         self.pushButton_RetirarRestante.setVisible(False)
-                    if saida.qtdRestante>0:
+
+                    if int(saida.qtdRestante) > 0:
                         Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
                         Mensagem.cor="black"
                         Mensagem.img=2
                     else:
-                        if saida.qtdRestante==0:
+                        if int(saida.qtdRestante)==0:
                             Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
                             Mensagem.cor="black"
                             Mensagem.img=1
@@ -5027,6 +5030,7 @@ class EditarUsuario(QtWidgets.QWidget):
         self.pushButton.clicked.connect(self.realizaBusca)
 
         self.pushButton_2.clicked.connect(self.limpaJanela)
+        self.pushButton_2.clicked.connect(self.lineEdit.clear())
 
         self.pushButton_3.clicked.connect(self.lineEdit.copy)
         self.pushButton_3.clicked.connect(self.editaUsuario)

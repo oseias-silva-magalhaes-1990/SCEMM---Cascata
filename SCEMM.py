@@ -2208,6 +2208,7 @@ class BaixaItem(QtWidgets.QWidget):
 class TelaPrescricao(QtWidgets.QWidget):
     cont = 0
     switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -2257,6 +2258,23 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
+
+        self.label_nomePac = QtWidgets.QLabel(Form)
+        self.label_nomePac.setFont(self.fontLabel)
+        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
+        self.label_nomePac.setObjectName("label_nomePac")
+        self.label_nomePac.setText("Paciente:")
+
+        self.line_nomePac = QtWidgets.QLineEdit(Form)
+        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
+        self.line_nomePac.setObjectName("line_nomePac")
+        self.line_nomePac.setReadOnly(True)
+        self.line_nomePac.setMaxLength(15)
+        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
+        self.line_sobrenomePac.setReadOnly(True)
+        self.line_sobrenomePac.setMaxLength(40)
 
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
@@ -2619,6 +2637,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
         self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
         self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
+        self.pushButton_Salvar.clicked.connect(self.mensagem)
 
         QtCore.QMetaObject.connectSlotsByName(Form)
         Form.setTabOrder(self.line_cpfPac, self.line_med1)
@@ -2750,6 +2769,9 @@ class TelaPrescricao(QtWidgets.QWidget):
 
     def menuPrincipal(self):
     	self.switch_window.emit()
+
+    def mensagem(self):
+        self.switch_window_2.emit()
 
     def copiarCampos(self):
         self.line_med1.copy()
@@ -3057,31 +3079,34 @@ class TelaPrescricao(QtWidgets.QWidget):
     	prescricao = Prescricao()
     	item = Item()
     	if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-    		self.lerSeqCampos()
-    		medicamentoInvalido = None
-    		medicamentoDuplicado = None
-    		for indice in range(len(self.vetMed)):
-    			for posicao in range(len(self.vetMed)):
-    				if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
-    						medicamentoDuplicado = indice
-
-    			if not item.validaLoteNomeItem(self.vetMed[indice][0]):
-    				medicamentoInvalido = indice
-
-    		if not medicamentoInvalido and not medicamentoDuplicado:
-    			paciente.recuperaBDpaciente(self.line_cpfPac.text())
-    			prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-    			prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-    			for indice in range(len(self.vetMed)):
-    				prescricao.setNomeItem(self.vetMed[indice][0])
-    				prescricao.setQtdAdm(self.vetMed[indice][1])
-    				prescricao.setFazUso(self.vetMed[indice][2])
-    				prescricao.gravaBDprescricao()
-    		else:
-    			if medicamentoInvalido:
-    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
-    			else:
-    				self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
+            self.lerSeqCampos()
+            medicamentoInvalido = None
+            medicamentoDuplicado = None
+            for indice in range(len(self.vetMed)):
+                for posicao in range(len(self.vetMed)):
+                    if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                        medicamentoDuplicado = indice
+                if not item.validaLoteNomeItem(self.vetMed[indice][0]):
+                    medicamentoInvalido = indice
+            if not medicamentoInvalido and not medicamentoDuplicado:
+                paciente.recuperaBDpaciente(self.line_cpfPac.text())
+                prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+                prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                for indice in range(len(self.vetMed)):
+                    prescricao.setNomeItem(self.vetMed[indice][0])
+                    prescricao.setQtdAdm(self.vetMed[indice][1])
+                    prescricao.setFazUso(self.vetMed[indice][2])
+                    prescricao.gravaBDprescricao()
+                Mensagem.msg="Prescricao salva com sucesso!"
+                Mensagem.cor="black"
+                Mensagem.img=1
+                self.line_cpfPac.clear()
+                self.limparCampos()
+            else:
+                if medicamentoInvalido:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
+                else:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
     	else:
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
@@ -3092,8 +3117,11 @@ class TelaPrescricao(QtWidgets.QWidget):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
             prescricao.setIdPaciente(paciente.getPaciente()[0][0])
             prescricao.recuperaBDprescricao()
-            print(prescricao.getPrescricao())
             self.preencheCampos(prescricao.getPrescricao())
+            print(paciente.getPaciente())
+            self.line_nomePac.setText(paciente.getPaciente()[0][1])
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
+
         elif self.line_cpfPac.text() != '':
             self.label_Erro.setText("Paciente não cadastrado")
 
@@ -3393,6 +3421,12 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.fontCampos.setWeight(75)
         self.fontCampos.setCapitalization(3)
 
+        self.fontLabel = QtGui.QFont()
+        self.fontLabel.setFamily("Arial")
+        self.fontLabel.setPointSize(12)
+        self.fontLabel.setBold(True)
+        self.fontLabel.setWeight(75)
+
         self.lineEdit_nome = QtWidgets.QLineEdit(Form)
         self.lineEdit_nome.setGeometry(QtCore.QRect(60, 50, 120, 22))
         self.lineEdit_nome.setObjectName("Campo Nome")
@@ -3404,7 +3438,7 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.lineEdit_nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[A-Za-z ]+"), self.lineEdit_nome))
 
         self.lineEdit_sobrenome = QtWidgets.QLineEdit(Form)
-        self.lineEdit_sobrenome.setGeometry(QtCore.QRect(260, 50, 260, 22))
+        self.lineEdit_sobrenome.setGeometry(QtCore.QRect(270, 50, 260, 22))
         self.lineEdit_sobrenome.setObjectName("Campo Sobrenome")
         self.lineEdit_sobrenome.setPlaceholderText("sobrenome do paciente")
         self.lineEdit_sobrenome.setToolTip("informe o sobrenome do paciente")
@@ -3442,7 +3476,7 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.label_nome.setGeometry(QtCore.QRect(20, 50, 40, 16))
         self.label_nome.setObjectName("label_nome")
         self.label_sobrenome = QtWidgets.QLabel(Form)
-        self.label_sobrenome.setGeometry(QtCore.QRect(190, 50, 55, 16))
+        self.label_sobrenome.setGeometry(QtCore.QRect(185, 50, 75, 16))
         self.label_sobrenome.setObjectName("label_sobrenome")
         self.label_rg = QtWidgets.QLabel(Form)
         self.label_rg.setGeometry(QtCore.QRect(300, 80, 30, 16))
@@ -3453,9 +3487,14 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.label_data_nasc = QtWidgets.QLabel(Form)
         self.label_data_nasc.setGeometry(QtCore.QRect(20, 110, 121, 16))
         self.label_data_nasc.setObjectName("label_data_nasc")
+
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setGeometry(QtCore.QRect(30, 160, 371, 131))
         self.label_Erro.setObjectName("Erro")
+        self.label_Erro.setFont(self.fontLabel)
+
+
+
         self.pushButton_Limpar = QtWidgets.QPushButton(Form)
         self.pushButton_Limpar.setGeometry(QtCore.QRect(430, 230, 91, 28))
         self.pushButton_Limpar.setObjectName("pushButton_limpar")
@@ -5813,7 +5852,9 @@ class Controller:
     def show_cad_presc(self):
         self.cadPresc = TelaPrescricao()
         self.cadPresc.switch_window.connect(self.show_main)
+        self.cadPresc.switch_window_2.connect(self.show_msg)
         self.cadPresc.show()
+
 
     def show_visualiza_pac(self):
         self.visualizarPac = VisualizarPac()

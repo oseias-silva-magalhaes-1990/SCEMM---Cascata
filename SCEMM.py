@@ -25,7 +25,6 @@ class BDprescricao(object):
             return False
         else:
             return True
-            #+++++++
 
     def atualizaPrescricaoBD(self, nomeAntigo, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
         dados = (nomeItem, paciente_id, nomeAntigo)
@@ -5030,7 +5029,7 @@ class EditarUsuario(QtWidgets.QWidget):
         self.pushButton.clicked.connect(self.realizaBusca)
 
         self.pushButton_2.clicked.connect(self.limpaJanela)
-        self.pushButton_2.clicked.connect(self.lineEdit.clear())
+        self.pushButton_2.clicked.connect(self.lineEdit.clear)
 
         self.pushButton_3.clicked.connect(self.lineEdit.copy)
         self.pushButton_3.clicked.connect(self.editaUsuario)

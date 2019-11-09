@@ -25,6 +25,7 @@ class BDprescricao(object):
             return False
         else:
             return True
+            #+++++++
 
     def atualizaPrescricaoBD(self, nomeAntigo, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
         dados = (nomeItem, paciente_id, nomeAntigo)

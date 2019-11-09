@@ -199,8 +199,13 @@ class BDitem(object):
     def selectAllitem(self, loteNome):
         dados = (loteNome, loteNome)
         self.cursor.execute("SELECT * FROM item WHERE lote = %s OR nome LIKE %s", dados)#Verifica se existe o item_id
-        lote = self.cursor.fetchall()
-        return lote
+        item = self.cursor.fetchall()
+        return item
+
+    def selectAllitemID(self, id):
+        self.cursor.execute("SELECT * FROM item WHERE item_id = %s", id)#Verifica se existe o item_id
+        item = self.cursor.fetchall()
+        return item
 
     def recuperaitemBD_SP(self):
         self.cursor.execute("SELECT * FROM item")
@@ -452,6 +457,45 @@ class BDusuario(object):
             return False
 
 #=====================================================================================================================
+class BDsaida(object):
+	def __init__(self):
+		self.db = pymysql.connect("localhost", "root", "", "scemm")
+		self.cursor = self.db.cursor()
+
+	def gravaSaida(self, qtdPrescrita, qtdSaida, qtdRestante, usuario_id, prescricao_id, paciente_id, item_id):
+		dados = (qtdPrescrita, qtdSaida, qtdRestante,date.today(), usuario_id, prescricao_id, paciente_id, item_id)
+		self.cursor.execute("INSERT INTO saida (qtdPrescrita, qtdSaida, qtdRestante,dataSaida, usuario_id, prescricao_id, paciente_id, item_id) VALUES (%s, %s, %s,%s, %s, %s, %s, %s)", dados)
+		self.db.commit()
+
+	def atualizaSaida(self, saida_id, qtdPrescrita, qtdSaida, qtdRestante, usuario_id, prescricao_id, paciente_id, item_id):
+		dados = (qtdPrescrita, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdPrescrita = %s WHERE saida_id = %s", dados)
+		dados = (qtdSaida, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdSaida = %s WHERE saida_id = %s", dados)
+		dados = (qtdRestante, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdRestante = %s WHERE saida_id = %s", dados)
+		dados = (usuario_id, saida_id)
+		self.cursor.execute("UPDATE saida SET usuario_id = %s WHERE saida_id = %s", dados)
+		dados = (prescricao_id, saida_id)
+		self.cursor.execute("UPDATE saida SET prescricao_id = %s WHERE saida_id = %s", dados)
+		dados = (paciente_id, saida_id)
+		self.cursor.execute("UPDATE saida SET paciente_id = %s WHERE saida_id = %s", dados)
+		dados = (item_id, saida_id)
+		self.cursor.execute("UPDATE saida SET item_id = %s WHERE saida_id = %s", dados)
+		self.db.commit()
+
+	def verificaSaidaDiaria(self, id):
+		dados = (id, date.today())
+		self.cursor.execute("SELECT saida_id FROM saida WHERE paciente_id = %s AND dataSaida = %s", dados)
+		saida_id = self.cursor.fetchall()
+		return saida_id
+
+	def recuperaSaida(self, paciente_id):
+		self.cursor.execute("SELECT * FROM saida WHERE paciente_id = %s AND qtdRestante > 0", paciente_id)
+		saida = self.cursor.fetchall()
+		return saida
+
+#=====================================================================================================================
 class Entrada(object):
 
     def __init__(self):
@@ -690,6 +734,10 @@ class Item(object):
     def recuperaItemBDitem(self,loteNome):
         bdItem = BDitem()
         self.item = bdItem.selectAllitem(loteNome)
+
+    def recuperaItemBDitemID(self,id):
+        bdItem = BDitem()
+        self.item = bdItem.selectAllitemID(id)
 
     def recuperaBDitem(self,loteNome):
         bdItem = BDitem()
@@ -992,13 +1040,20 @@ class Saida(object):
         self.usuario_id =""
         self.paciente_id = ""
         self.prescricao_id = ""
-        self.QtdSaida = ""
+        self.qtdSaida = ""
+        self.saida = ""
 
     def setDataSaida(self, dataSaida):
         self.data_saida = dataSaida
 
+    def setQtdPrescrita(self, QtdPrescrita):
+    	self.qtdPrescrita = QtdPrescrita
+
     def setQtdSaida(self, QtdSaida):
-        self.QtdSaida = QtdSaida
+        self.qtdSaida = QtdSaida
+
+    def setQtdRestante(self, QtdRestante):
+    	self.qtdRestante = QtdRestante
 
     def setDescarte(self, descarte):
         self.descarte = descarte
@@ -1021,17 +1076,51 @@ class Saida(object):
         return self.data_saida
 
     def getQtdSaida(self):
-        return self.QtdSaida
+        return self.qtdSaida
 
     def getDescarte(self):
         return self.descarte
+
+    def getSaida(self):
+    	return self.saida
 # =============================================================
     def gravaBDsaida(self):
-        print(self.item_id)
-        print(self.usuario_id)
-        print(self.paciente_id)
-        print(self.prescricao_id)
-        print(self.QtdSaida)
+    	bdSaida = BDsaida()
+    	print('\nQTD Prescrita: ' + str(self.qtdPrescrita))
+    	print('QTD Retirada: ' + str(self.qtdSaida))
+    	print('QTD Sobrou: ' + str(self.qtdRestante))
+    	print('ID usuario: ' + str(self.usuario_id))
+    	print('ID prescricao: ' + str(self.prescricao_id))
+    	print('ID paciente: ' + str(self.paciente_id))
+    	print('ID item: ' + str(self.item_id))
+    	bdSaida.gravaSaida(self.qtdPrescrita, self.qtdSaida, self.qtdRestante, self.usuario_id, self.prescricao_id, self.paciente_id, self.item_id)
+    	bdSaida.db.close()
+
+    def atualizaBDsaida(self, saida_id):
+    	bdSaida = BDsaida()
+    	print('\nQTD Prescrita: ' + str(self.qtdPrescrita))
+    	print('QTD Retirada: ' + str(self.qtdSaida))
+    	print('QTD Sobrou: ' + str(self.qtdRestante))
+    	print('ID usuario: ' + str(self.usuario_id))
+    	print('ID prescricao: ' + str(self.prescricao_id))
+    	print('ID paciente: ' + str(self.paciente_id))
+    	print('ID item: ' + str(self.item_id))
+    	bdSaida.atualizaSaida(saida_id, self.qtdPrescrita, self.qtdSaida, self.qtdRestante, self.usuario_id, self.prescricao_id, self.paciente_id, self.item_id)
+    	bdSaida.db.close()
+
+    def existeSaida(self, paciente_id):
+    	bdSaida = BDsaida()
+    	if bdSaida.verificaSaidaDiaria(paciente_id):
+    		bdSaida.db.close()
+    		return True
+    	else:
+    		bdSaida.db.close()
+    		return False
+
+    def recuperaBDsaida(self, paciente_id):
+    	bdSaida = BDsaida()
+    	self.saida = bdSaida.recuperaSaida(paciente_id)
+
 
 #========================================================================================================================
 class Usuario(object):
@@ -1156,6 +1245,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.loteMedInvalido = None
         self.nomeMedDuplicado = None
         self.prescricao_id = []
+        self.saida_id = []
         self.prescricao = Prescricao()
         self.setupUi(self)
 
@@ -1188,10 +1278,17 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_Retirar = QtWidgets.QPushButton(Form)
         self.pushButton_Retirar.setGeometry(QtCore.QRect(460, 180, 93, 28))
         self.pushButton_Retirar.setObjectName("pushButton_Retirar")
+        self.pushButton_Retirar.setVisible(False)
+
+        self.pushButton_RetirarRestante = QtWidgets.QPushButton(Form)
+        self.pushButton_RetirarRestante.setGeometry(QtCore.QRect(460, 180, 93, 28))
+        self.pushButton_RetirarRestante.setObjectName("pushButton_RetirarRestante")
+        self.pushButton_RetirarRestante.setVisible(False)
 
         self.pushButton_Buscar = QtWidgets.QPushButton(Form)
         self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
         self.pushButton_Buscar.setObjectName("pushButton_Buscar")
+
 
         self.pushButton_Limpar = QtWidgets.QPushButton(Form)
         self.pushButton_Limpar.setGeometry(QtCore.QRect(460, 142, 93, 28))
@@ -1684,12 +1781,45 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_14.setPlaceholderText("Med 14")
         self.line_med1_15.setPlaceholderText("Med 15")
 
+        self.line_med1.setReadOnly(True)
+        self.line_med1_2.setReadOnly(True)
+        self.line_med1_3.setReadOnly(True)
+        self.line_med1_4.setReadOnly(True)
+        self.line_med1_5.setReadOnly(True)
+        self.line_med1_6.setReadOnly(True)
+        self.line_med1_7.setReadOnly(True)
+        self.line_med1_8.setReadOnly(True)
+        self.line_med1_9.setReadOnly(True)
+        self.line_med1_10.setReadOnly(True)
+        self.line_med1_11.setReadOnly(True)
+        self.line_med1_12.setReadOnly(True)
+        self.line_med1_13.setReadOnly(True)
+        self.line_med1_14.setReadOnly(True)
+        self.line_med1_15.setReadOnly(True)
+
+        self.checkBox.setEnabled(False)
+        self.checkBox_2.setEnabled(False)
+        self.checkBox_3.setEnabled(False)
+        self.checkBox_4.setEnabled(False)
+        self.checkBox_5.setEnabled(False)
+        self.checkBox_6.setEnabled(False)
+        self.checkBox_7.setEnabled(False)
+        self.checkBox_8.setEnabled(False)
+        self.checkBox_9.setEnabled(False)
+        self.checkBox_10.setEnabled(False)
+        self.checkBox_11.setEnabled(False)
+        self.checkBox_12.setEnabled(False)
+        self.checkBox_13.setEnabled(False)
+        self.checkBox_14.setEnabled(False)
+        self.checkBox_15.setEnabled(False)
 
         self.retranslateUi(Form)
 
         self.pushButton_Retirar.clicked.connect(self.copiarCampos)
         self.pushButton_Retirar.clicked.connect(self.retirarPrescrito)
-        self.pushButton_Limpar.clicked.connect(self.limparCampos)
+        self.pushButton_RetirarRestante.clicked.connect(self.copiarCampos)
+        self.pushButton_RetirarRestante.clicked.connect(self.retirarRestante)
+        self.pushButton_Limpar.clicked.connect(self.limparLotes)
         self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
         self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
         self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
@@ -1759,6 +1889,9 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_Retirar.setToolTip(_translate("Form", "Retira pela prescrição do paciente"))
         self.pushButton_Retirar.setText(_translate("Form", "Retirar"))
         self.pushButton_Retirar.setShortcut(_translate("Form", "Ctrl+S"))
+        self.pushButton_RetirarRestante.setToolTip(_translate("Form", "Retira pela saida do paciente"))
+        self.pushButton_RetirarRestante.setText(_translate("Form", "Retirar restante"))
+        self.pushButton_RetirarRestante.setShortcut(_translate("Form", "Ctrl+S"))
         self.pushButton_Buscar.setToolTip(_translate("Form", "Busca a prescrição do paciente"))
         self.pushButton_Buscar.setText(_translate("Form", "Buscar"))
         self.pushButton_Buscar.setShortcut(_translate("Form", "Return"))
@@ -1874,6 +2007,24 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_qtd1_15.copy()
         self.line_cpfPac.copy()
 
+    def limparLotes(self):
+        self.line_lote.clear()
+        self.line_lote_2.clear()
+        self.line_lote_3.clear()
+        self.line_lote_4.clear()
+        self.line_lote_5.clear()
+        self.line_lote_6.clear()
+        self.line_lote_7.clear()
+        self.line_lote_8.clear()
+        self.line_lote_9.clear()
+        self.line_lote_10.clear()
+        self.line_lote_11.clear()
+        self.line_lote_12.clear()
+        self.line_lote_13.clear()
+        self.line_lote_14.clear()
+        self.line_lote_15.clear()
+        self.label_Erro.clear()
+
     def limparCampos(self):
         self.line_lote.clear()
         self.line_lote_2.clear()
@@ -1890,6 +2041,51 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_lote_13.clear()
         self.line_lote_14.clear()
         self.line_lote_15.clear()
+        self.line_med1.clear()
+        self.line_med1_2.clear()
+        self.line_med1_3.clear()
+        self.line_med1_4.clear()
+        self.line_med1_5.clear()
+        self.line_med1_6.clear()
+        self.line_med1_7.clear()
+        self.line_med1_8.clear()
+        self.line_med1_9.clear()
+        self.line_med1_10.clear()
+        self.line_med1_11.clear()
+        self.line_med1_12.clear()
+        self.line_med1_13.clear()
+        self.line_med1_14.clear()
+        self.line_med1_15.clear()
+        self.line_qtd1.clear()
+        self.line_qtd1_2.clear()
+        self.line_qtd1_3.clear()
+        self.line_qtd1_4.clear()
+        self.line_qtd1_5.clear()
+        self.line_qtd1_6.clear()
+        self.line_qtd1_7.clear()
+        self.line_qtd1_8.clear()
+        self.line_qtd1_9.clear()
+        self.line_qtd1_10.clear()
+        self.line_qtd1_11.clear()
+        self.line_qtd1_12.clear()
+        self.line_qtd1_13.clear()
+        self.line_qtd1_14.clear()
+        self.line_qtd1_15.clear()
+        self.checkBox.setChecked(False)
+        self.checkBox_2.setChecked(False)
+        self.checkBox_3.setChecked(False)
+        self.checkBox_4.setChecked(False)
+        self.checkBox_5.setChecked(False)
+        self.checkBox_6.setChecked(False)
+        self.checkBox_7.setChecked(False)
+        self.checkBox_8.setChecked(False)
+        self.checkBox_9.setChecked(False)
+        self.checkBox_10.setChecked(False)
+        self.checkBox_11.setChecked(False)
+        self.checkBox_12.setChecked(False)
+        self.checkBox_13.setChecked(False)
+        self.checkBox_14.setChecked(False)
+        self.checkBox_15.setChecked(False)
 
     def maisCampos(self):
         if self.cont == 0:
@@ -2022,110 +2218,220 @@ class BaixaItem(QtWidgets.QWidget):
 
     def preencheCampos(self, prescricao):
     	self.limparCampos()
-    	if len(prescricao)>0:
+    	self.label_Erro.clear()
+    	if len(prescricao)>0 and prescricao[0][3]:
             self.prescricao_id.append(prescricao[0][0])
             self.line_med1.setText(prescricao[0][1])
             self.line_qtd1.setText(str(prescricao[0][2]))
             if prescricao[0][3] == 1:
                 self.checkBox.setChecked(True)
 
-    	if len(prescricao)>1:
+    	if len(prescricao)>1 and prescricao[1][3]:
             self.prescricao_id.append(prescricao[1][0])
             self.line_med1_2.setText(prescricao[1][1])
             self.line_qtd1_2.setText(str(prescricao[1][2]))
             if prescricao[1][3] == 1:
                 self.checkBox_2.setChecked(True)
 
-    	if len(prescricao)>2:
+    	if len(prescricao)>2 and prescricao[2][3]:
             self.prescricao_id.append(prescricao[2][0])
             self.line_med1_3.setText(prescricao[2][1])
             self.line_qtd1_3.setText(str(prescricao[2][2]))
             if prescricao[2][3] == 1:
                 self.checkBox_3.setChecked(True)
 
-    	if len(prescricao)>3:
+    	if len(prescricao)>3 and prescricao[3][3]:
             self.prescricao_id.append(prescricao[3][0])
             self.line_med1_4.setText(prescricao[3][1])
             self.line_qtd1_4.setText(str(prescricao[3][2]))
             if prescricao[3][3] == 1:
                 self.checkBox_4.setChecked(True)
 
-    	if len(prescricao)>4:
+    	if len(prescricao)>4 and prescricao[4][3]:
             self.prescricao_id.append(prescricao[4][0])
             self.line_med1_5.setText(prescricao[4][1])
             self.line_qtd1_5.setText(str(prescricao[4][2]))
             if prescricao[4][3] == 1:
                 self.checkBox_5.setChecked(True)
 
-    	if len(prescricao)>5:
+    	if len(prescricao)>5 and prescricao[5][3]:
             self.prescricao_id.append(prescricao[5][0])
             self.line_med1_6.setText(prescricao[5][1])
             self.line_qtd1_6.setText(str(prescricao[5][2]))
             if prescricao[5][3] == 1:
                 self.checkBox_6.setChecked(True)
 
-    	if len(prescricao)>6:
+    	if len(prescricao)>6 and prescricao[6][3]:
             self.prescricao_id.append(prescricao[6][0])
             self.line_med1_7.setText(prescricao[6][1])
             self.line_qtd1_7.setText(str(prescricao[6][2]))
             if prescricao[6][3] == 1:
                 self.checkBox_7.setChecked(True)
 
-    	if len(prescricao)>7:
+    	if len(prescricao)>7 and prescricao[7][3]:
             self.prescricao_id.append(prescricao[7][0])
             self.line_med1_8.setText(prescricao[7][1])
             self.line_qtd1_8.setText(str(prescricao[7][2]))
             if prescricao[7][3] == 1:
                 self.checkBox_8.setChecked(True)
 
-    	if len(prescricao)>8:
+    	if len(prescricao)>8 and prescricao[8][3]:
             self.prescricao_id.append(prescricao[8][0])
             self.line_med1_9.setText(prescricao[8][1])
             self.line_qtd1_9.setText(str(prescricao[8][2]))
             if prescricao[8][3] == 1:
                 self.checkBox_9.setChecked(True)
 
-    	if len(prescricao)>9:
+    	if len(prescricao)>9 and prescricao[9][3]:
             self.prescricao_id.append(prescricao[9][0])
             self.line_med1_10.setText(prescricao[9][1])
             self.line_qtd1_10.setText(str(prescricao[9][2]))
             if prescricao[9][3] == 1:
                 self.checkBox_10.setChecked(True)
 
-    	if len(prescricao)>10:
+    	if len(prescricao)>10 and prescricao[10][3]:
             self.prescricao_id.append(prescricao[10][0])
             self.line_med1_11.setText(prescricao[10][1])
             self.line_qtd1_11.setText(str(prescricao[10][2]))
             if prescricao[10][3] == 1:
                 self.checkBox_11.setChecked(True)
 
-    	if len(prescricao)>11:
+    	if len(prescricao)>11 and prescricao[11][3]:
             self.prescricao_id.append(prescricao[11][0])
             self.line_med1_12.setText(prescricao[11][1])
             self.line_qtd1_12.setText(str(prescricao[11][2]))
             if prescricao[11][3] == 1:
                 self.checkBox_12.setChecked(True)
 
-    	if len(prescricao)>12:
+    	if len(prescricao)>12 and prescricao[12][3]:
             self.prescricao_id.append(prescricao[12][0])
             self.line_med1_13.setText(prescricao[12][1])
             self.line_qtd1_13.setText(str(prescricao[12][2]))
             if prescricao[12][3] == 1:
                 self.checkBox_13.setChecked(True)
 
-    	if len(prescricao)>13:
+    	if len(prescricao)>13 and prescricao[13][3]:
             self.prescricao_id.append(prescricao[13][0])
             self.line_med1_14.setText(prescricao[13][1])
             self.line_qtd1_14.setText(str(prescricao[13][2]))
             if prescricao[13][3] == 1:
                 self.checkBox_14.setChecked(True)
 
-    	if len(prescricao)>14:
+    	if len(prescricao)>14 and prescricao[14][3]:
             self.prescricao_id.append(prescricao[14][0])
             self.line_med1_15.setText(prescricao[14][1])
             self.line_qtd1_15.setText(str(prescricao[14][2]))
             if prescricao[14][3] == 1:
                 self.checkBox_15.setChecked(True)
+
+    def preencheSaidaRestante(self, saida):
+    	self.limparCampos()
+    	self.label_Erro.clear()
+    	item = Item()
+    	if len(saida)>0:
+            self.saida_id.append(saida[0][0])
+            item.recuperaItemBDitemID(saida[0][9])
+            self.line_med1.setText(item.getItem()[0][1])
+            self.line_qtd1.setText(str(saida[0][3]))
+            self.checkBox.setChecked(True)
+
+    	if len(saida)>1:
+            self.saida_id.append(saida[1][0])
+            item.recuperaItemBDitemID(saida[1][9])
+            self.line_med1_2.setText(item.getItem()[0][1])
+            self.line_qtd1_2.setText(str(saida[1][3]))
+            self.checkBox_2.setChecked(True)
+
+    	if len(saida)>2:
+            self.saida_id.append(saida[2][0])
+            item.recuperaItemBDitemID(saida[2][9])
+            self.line_med1_3.setText(item.getItem()[0][1])
+            self.line_qtd1_3.setText(str(saida[2][3]))
+            self.checkBox_3.setChecked(True)
+
+    	if len(saida)>3:
+            self.saida_id.append(saida[3][0])
+            item.recuperaItemBDitemID(saida[3][9])
+            self.line_med1_4.setText(item.getItem()[0][1])
+            self.line_qtd1_4.setText(str(saida[3][3]))
+            self.checkBox_4.setChecked(True)
+
+    	if len(saida)>4:
+            self.saida_id.append(saida[4][0])
+            item.recuperaItemBDitemID(saida[4][9])
+            self.line_med1_5.setText(item.getItem()[0][1])
+            self.line_qtd1_5.setText(str(saida[4][3]))
+            self.checkBox_5.setChecked(True)
+
+    	if len(saida)>5:
+            self.saida_id.append(saida[5][0])
+            item.recuperaItemBDitemID(saida[5][9])
+            self.line_med1_6.setText(item.getItem()[0][1])
+            self.line_qtd1_6.setText(str(saida[5][3]))
+            self.checkBox_6.setChecked(True)
+
+    	if len(saida)>6:
+            self.saida_id.append(saida[6][0])
+            item.recuperaItemBDitemID(saida[6][9])
+            self.line_med1_7.setText(item.getItem()[0][1])
+            self.line_qtd1_7.setText(str(saida[6][3]))
+            self.checkBox_7.setChecked(True)
+
+    	if len(saida)>7:
+            self.saida_id.append(saida[7][0])
+            item.recuperaItemBDitemID(saida[7][9])
+            self.line_med1_8.setText(item.getItem()[0][1])
+            self.line_qtd1_8.setText(str(saida[7][3]))
+            self.checkBox_8.setChecked(True)
+
+    	if len(saida)>8:
+            self.saida_id.append(saida[8][0])
+            item.recuperaItemBDitemID(saida[8][9])
+            self.line_med1_9.setText(item.getItem()[0][1])
+            self.line_qtd1_9.setText(str(saida[8][3]))
+            self.checkBox_9.setChecked(True)
+
+    	if len(saida)>9:
+            self.saida_id.append(saida[9][0])
+            item.recuperaItemBDitemID(saida[9][9])
+            self.line_med1_10.setText(item.getItem()[0][1])
+            self.line_qtd1_10.setText(str(saida[9][3]))
+            self.checkBox_10.setChecked(True)
+
+    	if len(saida)>10:
+            self.saida_id.append(saida[10][0])
+            item.recuperaItemBDitemID(saida[10][9])
+            self.line_med1_11.setText(item.getItem()[0][1])
+            self.line_qtd1_11.setText(str(saida[10][3]))
+            self.checkBox_11.setChecked(True)
+
+    	if len(saida)>11:
+            self.saida_id.append(saida[11][0])
+            item.recuperaItemBDitemID(saida[11][9])
+            self.line_med1_12.setText(item.getItem()[0][1])
+            self.line_qtd1_12.setText(str(saida[11][3]))
+            self.checkBox_12.setChecked(True)
+
+    	if len(saida)>12:
+            self.saida_id.append(saida[12][0])
+            item.recuperaItemBDitemID(saida[12][9])
+            self.line_med1_13.setText(item.getItem()[0][1])
+            self.line_qtd1_13.setText(str(saida[12][3]))
+            self.checkBox_13.setChecked(True)
+
+    	if len(saida)>13:
+            self.saida_id.append(saida[13][0])
+            item.recuperaItemBDitemID(saida[13][9])
+            self.line_med1_14.setText(item.getItem()[0][1])
+            self.line_qtd1_14.setText(str(saida[13][3]))
+            self.checkBox_14.setChecked(True)
+
+    	if len(saida)>14:
+            self.saida_id.append(saida[14][0])
+            item.recuperaItemBDitemID(saida[14][9])
+            self.line_med1_15.setText(item.getItem()[0][1])
+            self.line_qtd1_15.setText(str(saida[14][3]))
+            self.checkBox_15.setChecked(True)
 
     def retirarPrescrito(self):
         self.nomeMedDuplicado = -1
@@ -2133,6 +2439,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.loteInvalido = -1
         self.medicamentoVencido = -1
         self.erroQuantidade = -1
+        self.erroQtdPrescrita = -1
         self.label_Erro.clear()
         self.vetMed = []
         paciente = Paciente()
@@ -2149,9 +2456,12 @@ class BaixaItem(QtWidgets.QWidget):
                             if item.getDataVenc()[0][0] > date.today():
                                 decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
                                 if decremento >= 0:
-                                    for posicao in range(len(self.vetMed)):
-                                        if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
-                                            self.nomeMedDuplicado = indice
+                                	if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
+                                		for posicao in range(len(self.vetMed)):
+                                			if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                                				self.nomeMedDuplicado = indice
+                                	else:
+                                		self.erroQtdPrescrita = indice
                                 else:
                                     self.erroQuantidade = indice
                             else:
@@ -2160,44 +2470,143 @@ class BaixaItem(QtWidgets.QWidget):
                             self.loteInvalido = indice
                     else:
                         self.nomeMedInvalido = indice
-
-            print(self.medicamentoVencido)
-            print(self.loteInvalido)
             if self.nomeMedInvalido != -1:
-                print(self.vetMed[self.nomeMedInvalido][0])
                 self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
-            if self.loteInvalido != -1:
-                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0])
-            if self.medicamentoVencido != -1:
-                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0])
-            #if self.nomeMedDuplicado != -1:
-                #self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0])
-            #if self.erroQuantidade != -1:
-                #self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0])
+            elif self.loteInvalido != -1:
+                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
+            elif self.medicamentoVencido != -1:
+                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+            elif self.nomeMedDuplicado != -1:
+                self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
+            elif self.erroQuantidade != -1:
+                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+            elif self.erroQtdPrescrita != -1:
+                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
+            else:
+            	for i in range((len(self.vetMed))):
+            		saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
+            		if self.vetMed[i][2]:
+            			saida.setQtdSaida(self.vetMed[i][1])
+            			saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
+            			saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+            			saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+            			decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+            			item.setLote(self.vetMed[i][2])
+            			item.updateQtdItem(decremento)
+            			saida.setIdPrescricao(self.prescricao_id[i])
+            			item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+            			saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+            			saida.gravaBDsaida()
+            			self.pushButton_Retirar.setVisible(False)
+            			self.pushButton_RetirarRestante.setVisible(False)
+            		else:
+                		saida.setQtdSaida(0)
+                		saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
+	                	saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+	                	saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+	                	saida.setIdPrescricao(self.prescricao_id[i])
+	                	item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+	                	saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+	                	saida.gravaBDsaida()
+	                	self.pushButton_Retirar.setVisible(False)
+	                	self.pushButton_RetirarRestante.setVisible(False)
+        else:
+            self.label_Erro.setText("Paciente não está cadastrado!")
 
-                '''paciente.recuperaBDpaciente(self.line_cpfPac.text())
-                for i in range(len(self.vetMed[0][2])):
-                    print('Indice:' + str(i))
-                    saida.setQtdSaida(self.vetMed[i][1])
-                    saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                    saida.setIdPaciente(paciente.getPaciente()[0][0])
-                    item.recuperaBDitem(self.vetMed[i][2])
-                    decremento = item.getQtdItem()[0][0] - int(self.vetMed[indice][1]) 
-                    print(decremento)
-                    #item.updateQtdItem(decremento)
-                    saida.setIdPrescricao(self.prescricao_id[i])
-                    saida.gravaBDsaida()'''
-
+    def retirarRestante(self):
+        self.nomeMedInvalido = -1
+        self.loteInvalido = -1
+        self.medicamentoVencido = -1
+        self.erroQuantidade = -1
+        self.erroQtdPrescrita = -1
+        self.label_Erro.clear()
+        self.vetMed = []
+        paciente = Paciente()
+        usuario = Usuario()
+        saida = Saida()
+        item = Item()
+        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            self.lerSeqCampos()
+            for indice in range(len(self.vetMed)):
+                if self.vetMed[indice][2] != '':
+                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                            item.recuperaBDitem(self.vetMed[indice][2])
+                            if item.getDataVenc()[0][0] > date.today():
+                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                                if decremento >= 0:
+                                	if int(self.vetMed[indice][1]) <= self.saida.getSaida()[indice][3]:
+                                		print('OK')
+                                	else:
+                                		self.erroQtdPrescrita = indice
+                                else:
+                                    self.erroQuantidade = indice
+                            else:
+                                self.medicamentoVencido = indice
+                        else:
+                            self.loteInvalido = indice
+                    else:
+                        self.nomeMedInvalido = indice
+            if self.nomeMedInvalido != -1:
+                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0].upper())
+            elif self.loteInvalido != -1:
+                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
+            elif self.medicamentoVencido != -1:
+                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+            elif self.erroQuantidade != -1:
+                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+            elif self.erroQtdPrescrita != -1:
+                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
+            else:
+            	for i in range((len(self.vetMed))):
+            		saida.setQtdPrescrita(self.saida.getSaida()[i][1])
+            		print(self.vetMed[i][1])
+            		if self.vetMed[i][2]:
+            			saida.setQtdSaida(self.vetMed[i][1])
+            			saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
+            			decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+            			saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+            			saida.setIdPaciente(self.saida.getSaida()[i][8])
+            			item.setLote(self.vetMed[i][2])
+            			item.updateQtdItem(decremento)
+            			saida.setIdPrescricao(self.saida.getSaida()[i][7])
+            			saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+            			saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+            			self.pushButton_Retirar.setVisible(False)
+            			self.pushButton_RetirarRestante.setVisible(False)
+            		else:
+                		saida.setQtdSaida(0)
+                		saida.setQtdRestante(self.vetMed[i][1])
+	                	saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+	                	saida.setIdPaciente(self.saida.getSaida()[i][8])
+	                	saida.setIdPrescricao(self.saida.getSaida()[i][7])
+	                	saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+	                	saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+	                	self.pushButton_Retirar.setVisible(False)
+	                	self.pushButton_RetirarRestante.setVisible(False)
         else:
             self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
     	paciente = Paciente()
+    	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-            self.prescricao.recuperaBDprescricao()
-            self.preencheCampos(self.prescricao.getPrescricao())
+            if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
+            	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
+            	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
+            		self.pushButton_Retirar.setVisible(False)
+            		self.pushButton_RetirarRestante.setVisible(True)
+            		self.preencheSaidaRestante(self.saida.getSaida())
+            	else:
+            		self.label_Erro.setText("Todas as baixas desta paciente já foram realizadas hoje!")
+            		self.limparCampos()
+            else:
+            	self.pushButton_Retirar.setVisible(True)
+            	self.pushButton_RetirarRestante.setVisible(False)
+            	self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+            	self.prescricao.recuperaBDprescricao()
+            	self.preencheCampos(self.prescricao.getPrescricao())
     	else:
     		if self.line_cpfPac.text() != '':
     			self.label_Erro.setText("Paciente não cadastrado")
@@ -5607,12 +6016,12 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.switch_window_9.emit()
 
     def telaPrescricao(self):
-        self.switch_window_10.emit()
+        #self.switch_window_10.emit()
         self.switch_window_8.emit()
 
 
     def telaBaixaItem(self):
-        self.switch_window_10.emit()
+        #self.switch_window_10.emit()
         self.switch_window_7.emit()
 
     def telaEditarPaciente(self):

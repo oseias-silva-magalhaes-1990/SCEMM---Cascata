@@ -6203,7 +6203,6 @@ class Controller:
         self.login.show()
 
     def fechar_menu(self):
-
         app=sys.executable
         os.execl(app,app, *sys.argv)
 

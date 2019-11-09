@@ -2482,7 +2482,7 @@ class BaixaItem(QtWidgets.QWidget):
                 self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
             elif self.erroQtdPrescrita != -1:
                 self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
-            else:
+            else:#
             	for i in range((len(self.vetMed))):
             		saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
             		if self.vetMed[i][2]:

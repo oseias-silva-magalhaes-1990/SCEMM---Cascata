@@ -2539,8 +2539,8 @@ class BaixaItem(QtWidgets.QWidget):
     	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.line_nomePac.setText(paciente.getPaciente()[0][1])
-            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
+            self.line_nomePac.setText(paciente.getPaciente()[0][1].upper())
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].upper())
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0

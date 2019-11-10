@@ -2,6 +2,7 @@ import os
 import sys
 import psutil as ps
 import pymysql
+import PyQt5
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets

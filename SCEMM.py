@@ -6,6 +6,42 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import datetime, date
+app = QtWidgets.QApplication(sys.argv)
+
+class BDprescricao(object):
+    def __init__(self):
+        self.db = pymysql.connect("localhost", "root", "", "scemm")
+        self.cursor = self.db.cursor()
+
+    def gravaPrescricaoBD(self, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):#Definidos como Não nulos no banco
+        dados = (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id)
+        self.cursor.execute("INSERT INTO prescricao (nomeItem, qtdAdm, fazUso, paciente_id, usuario_id) VALUES (%s, %s, %s, %s, %s)", dados)
+        self.db.commit()
+
+    def existePrescricao(self, paciente_id, nomeItem):
+        dados = (paciente_id, nomeItem)
+        self.cursor.execute("SELECT paciente_id FROM prescricao WHERE paciente_id = %s AND nomeItem = %s", dados)
+        paciente_id = self.cursor.fetchall()
+        if not paciente_id:
+            return False
+        else:
+            return True
+
+    def atualizaPrescricaoBD(self, nomeAntigo, nomeItem, qtdAdm, fazUso, paciente_id, usuario_id):
+        dados = (nomeItem, paciente_id, nomeAntigo)
+        self.cursor.execute("UPDATE prescricao SET nomeItem = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (qtdAdm, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET qtdAdm = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (fazUso, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET fazUso = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        dados = (usuario_id, paciente_id, nomeItem)
+        self.cursor.execute("UPDATE prescricao SET usuario_id = %s WHERE paciente_id = %s AND nomeItem = %s", dados)
+        self.db.commit()
+
+    def recuperaPrescPaciente(self, paciente_id):
+    	self.cursor.execute("SELECT * FROM prescricao WHERE paciente_id = %s", paciente_id)
+    	return self.cursor.fetchall()
+    	self.db.commit()
 
 class BDentrada(object):
     def __init__(self):
@@ -83,7 +119,6 @@ class BDitem(object):
     def restauraExcluido(self,lote):
         self.cursor.execute("UPDATE item SET excluido = 0 WHERE lote = %s", lote)
         self.db.commit()
-        self.db.close()
 
     def itemBDexcluido(self,lote):
         self.cursor.execute("SELECT item_id FROM item WHERE lote = %s AND excluido = 1", lote)#Verifica se existe o item_id
@@ -163,8 +198,20 @@ class BDitem(object):
     def selectAllitem(self, loteNome):
         dados = (loteNome, loteNome)
         self.cursor.execute("SELECT * FROM item WHERE lote = %s OR nome LIKE %s", dados)#Verifica se existe o item_id
-        lote = self.cursor.fetchall()
-        return lote
+        item = self.cursor.fetchall()
+        return item
+
+    def selectAllitemID(self, id):
+        self.cursor.execute("SELECT * FROM item WHERE item_id = %s", id)#Verifica se existe o item_id
+        item = self.cursor.fetchall()
+        return item
+
+    def recuperaitemBD_SP(self):
+        self.cursor.execute("SELECT * FROM item")
+        dado = self.cursor.fetchall()
+        self.db.close()
+        return dado
+
 
     def verificaLoteItem(self,lote):
         cursor = self.db.cursor()
@@ -262,6 +309,12 @@ class BDpaciente(object):
         self.db.close()
         return paciente
 
+    def selectAllPacienteSP(self):
+        self.cursor.execute("SELECT * FROM paciente")
+        paciente = self.cursor.fetchall()
+        self.db.close()
+        return paciente
+
     def recuperaNome(self, cpf):
         self.cursor.execute("SELECT nome FROM paciente WHERE cpf = %s ", cpf)
         nome = self.cursor.fetchone()
@@ -285,8 +338,13 @@ class BDpaciente(object):
     def recuperaDataNasc(self, cpf):
         self.cursor.execute("SELECT data_nasc FROM paciente WHERE cpf = %s ", cpf)
         data_nasc = self.cursor.fetchone()
-        self.db.close()
         return data_nasc
+
+    def recuperaIDpaciente(self, cpf):
+        self.cursor.execute("SELECT paciente_id FROM paciente WHERE cpf = %s", cpf)
+        pac_id = self.cursor.fetchone()
+        self.db.close()
+        return pac_id
 #=====================================================================================
 class BDusuario(object):
 
@@ -311,6 +369,7 @@ class BDusuario(object):
         self.db.commit()
 
     def excluiBDusuario(self, nome):
+        print(nome)
         self.cursor.execute("UPDATE usuario SET excluido = 1 WHERE nome = %s", nome)
         self.db.commit()
 
@@ -349,6 +408,11 @@ class BDusuario(object):
         dado = self.cursor.fetchall()
         return dado
 
+    def recuperaTodosUsuarios(self, nome):
+        self.cursor.execute("SELECT * FROM usuario WHERE nome = %s",nome)
+        dado = self.cursor.fetchall()
+        return dado
+
     def atualizaNomeUsuario(self, nomeAntigo, nomeNovo):
         dados = (nomeNovo.upper(), nomeAntigo.upper())
         self.cursor.execute("UPDATE usuario SET nome = %s WHERE nome = %s", dados)
@@ -379,7 +443,7 @@ class BDusuario(object):
     def verificaEadmin(self, nome):  # verifica se a senha pertence ao nome do existente
         self.cursor.execute("SELECT eadmin FROM usuario WHERE nome = %s", nome)
         eadmin = self.cursor.fetchone()
-        if eadmin[0] == 1:
+        if eadmin[0]:
             return True
         else:
             return False
@@ -387,10 +451,49 @@ class BDusuario(object):
     def verificaExcluido(self, nome):  # verifica se a senha pertence ao nome do existente
         self.cursor.execute("SELECT excluido FROM usuario WHERE nome = %s", nome)
         excluido = self.cursor.fetchone()
-        if excluido[0] == 1:
+        if excluido[0]:
             return True
         else:
             return False
+
+#=====================================================================================================================
+class BDsaida(object):
+	def __init__(self):
+		self.db = pymysql.connect("localhost", "root", "", "scemm")
+		self.cursor = self.db.cursor()
+
+	def gravaSaida(self, qtdPrescrita, qtdSaida, qtdRestante, usuario_id, prescricao_id, paciente_id, item_id):
+		dados = (qtdPrescrita, qtdSaida, qtdRestante,date.today(), usuario_id, prescricao_id, paciente_id, item_id)
+		self.cursor.execute("INSERT INTO saida (qtdPrescrita, qtdSaida, qtdRestante,dataSaida, usuario_id, prescricao_id, paciente_id, item_id) VALUES (%s, %s, %s,%s, %s, %s, %s, %s)", dados)
+		self.db.commit()
+
+	def atualizaSaida(self, saida_id, qtdPrescrita, qtdSaida, qtdRestante, usuario_id, prescricao_id, paciente_id, item_id):
+		dados = (qtdPrescrita, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdPrescrita = %s WHERE saida_id = %s", dados)
+		dados = (qtdSaida, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdSaida = %s WHERE saida_id = %s", dados)
+		dados = (qtdRestante, saida_id)
+		self.cursor.execute("UPDATE saida SET qtdRestante = %s WHERE saida_id = %s", dados)
+		dados = (usuario_id, saida_id)
+		self.cursor.execute("UPDATE saida SET usuario_id = %s WHERE saida_id = %s", dados)
+		dados = (prescricao_id, saida_id)
+		self.cursor.execute("UPDATE saida SET prescricao_id = %s WHERE saida_id = %s", dados)
+		dados = (paciente_id, saida_id)
+		self.cursor.execute("UPDATE saida SET paciente_id = %s WHERE saida_id = %s", dados)
+		dados = (item_id, saida_id)
+		self.cursor.execute("UPDATE saida SET item_id = %s WHERE saida_id = %s", dados)
+		self.db.commit()
+
+	def verificaSaidaDiaria(self, id):
+		dados = (id, date.today())
+		self.cursor.execute("SELECT saida_id FROM saida WHERE paciente_id = %s AND dataSaida = %s", dados)
+		saida_id = self.cursor.fetchall()
+		return saida_id
+
+	def recuperaSaida(self, paciente_id):
+		self.cursor.execute("SELECT * FROM saida WHERE paciente_id = %s AND qtdRestante > 0", paciente_id)
+		saida = self.cursor.fetchall()
+		return saida
 
 #=====================================================================================================================
 class Entrada(object):
@@ -428,115 +531,6 @@ class Entrada(object):
         bdEnt.db.close()
 
 #=======================================================================================================================
-class Usuario(object):
-    usuLogado = ""
-
-    def __init__(self):
-        self.nome = ""
-        self.senha = ""
-        self.excluido = ""
-        self.idUsu = ""
-
-    def setNomeUsuario(self,nomeUsu):
-        self.nome = nomeUsu
-
-    def setSenhaUsuario(self,senhaUsu):
-        self.senha = senhaUsu
-
-    def getNomeUsuario(self):
-        return self.nome
-
-    def getSenhaUsuario(self):
-        return self.senha
-
-    def getUsuLogado(self):
-        return self.usuLogado
-
-    def getEadmin(self):
-        return self.eadmin
-
-    def getIDusu(self):
-        return self.idUsu
-
-    def validaNomeUsuario(self, nome):
-        self.nome = nome
-        bdUsu = BDusuario()
-
-        if bdUsu.verificaNomeUsuario(self.nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaSenhaUsuario(self, senha):
-        self.senha = senha
-        bdUsu = BDusuario()
-        if bdUsu.verificaSenhaUsuario(self.nome, self.senha):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaEadmin(self,nome):
-        bdUsu = BDusuario()
-        if bdUsu.verificaEadmin(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def validaExcluido(self,nome):
-        bdUsu = BDusuario()
-        if bdUsu.verificaExcluido(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
-
-    def insereBDusuario(self):
-        bdUsu = BDusuario()
-        bdUsu.insereBDUsuario(self.nome, self.senha)
-        bdUsu.db.close()
-
-    def insereAdminUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.insereBDeadmin(self.nome)
-        bdUsu.db.close()
-
-    def retiraAdminUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.retiraBDeadmin(self.nome)
-        bdUsu.db.close()
-
-    def updateNomeBDusuario(self,nomeNovo):
-        bdUsu = BDusuario()
-        bdUsu.atualizaNomeUsuario(self.nome, nomeNovo)
-        self.nome = nomeNovo
-        bdUsu.db.close()
-
-    def updateSenhaBDusuario(self, senhaNova):
-        bdUsu = BDusuario()
-        bdUsu.atualizaSenhaUsuario(self.nome, senhaNova)
-        bdUsu.db.close()
-
-    def excluiUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.excluiBDusuario(self.nome)
-        bdUsu.db.close()
-
-    def restauraUsuario(self):
-        bdUsu = BDusuario()
-        bdUsu.restauraBDusuario(self.nome)
-        bdUsu.db.close()
-
-    def recuperaIDusuario(self, nomeUsu):
-        bdUsu = BDusuario()
-        return bdUsu.recuperaIDusuarioBD(nomeUsu)
-
 
 #=======================================================================================================================
 class Item(object):
@@ -629,6 +623,10 @@ class Item(object):
         bdItem = BDitem()
         self.item = bdItem.selectAllitem(loteNome)
 
+    def recuperaItemBDitemID(self,id):
+        bdItem = BDitem()
+        self.item = bdItem.selectAllitemID(id)
+
     def recuperaBDitem(self,loteNome):
         bdItem = BDitem()
         self.nome = bdItem.recuperaNome(loteNome)
@@ -704,12 +702,17 @@ class Item(object):
 
     def restauraItem(self, lote):
         bdItem = BDitem()
-        bdItem.selectAllitem(lote)
+        bdItem.restauraExcluido(lote)
         bdItem.db.close()
 
     def recuperaIDitem(self, lote):
         bdItem = BDitem()
         return bdItem.recuperaIDitemBD(lote)
+
+    def recuperaItemBDSP(self):
+        bdItem = BDitem()
+        dados=bdItem.recuperaitemBD_SP()
+        return dados
 
     def validaLoteItem(self, lote):
         bdItem = BDitem()
@@ -759,6 +762,7 @@ class Paciente(object):
         self.rg = ""
         self.data_nasc = ""
         self.pac = ""
+        self.paciente_id = ""
 
     def setNomePaciente(self,nomePaciente):
         self.nome = nomePaciente
@@ -794,6 +798,9 @@ class Paciente(object):
     def getPaciente(self):
         return self.pac
 
+    def getIDpac(self):
+        return self.paciente_id
+
 #=============================================================
     def cpfCorreto(self):
         dbPac = BDpaciente()
@@ -825,6 +832,11 @@ class Paciente(object):
         bdPac = BDpaciente()
         self.pac = bdPac.selectAllPaciente(cpfNome)
 
+    def recuperaBDpacienteSP(self):
+        bdPac = BDpaciente()
+        self.pac = bdPac.selectAllPacienteSP()
+
+
     def validaCPFpaciente(self, cpf):#Verifica se o cpf existe
         dbPac = BDpaciente()
         if dbPac.verificaCPFpaciente(cpf):
@@ -832,13 +844,14 @@ class Paciente(object):
         else:
             return False
 
-    def recuperaBDpacVar(self, cpf):
+    def recuperaBDpacAtr(self, cpf):
         dbPac = BDpaciente()
         self.nome = dbPac.recuperaNome(cpf)
         self.sobrenome = dbPac.recuperaSobrenome(cpf)
         self.cpf = dbPac.recuperaCPF(cpf)
         self.rg = dbPac.recuperaRG(cpf)
         self.data_nasc = dbPac.recuperaDataNasc(cpf)
+        self.paciente_id = dbPac.recuperaIDpaciente(cpf)
 
 
 #============================================================================================================
@@ -846,15 +859,13 @@ class Prescricao(object):
     cpf_paciente = ""
 
     def __init__(self):
-        self.PeriodoAdm = ""
         self.FazUso = ""
         self.qtdAdmin = ""
-        self.id_item = ""
+        self.nomeAntigo = ""
+        self.nomeItem = ""
         self.id_usuario = ""
         self.id_Paciente = ""
-
-    def setPeriodoAdm(self,PeriodoAdm):
-        self.PeriodoAdm = PeriodoAdm
+        self.prescricao = ""
 
     def setFazUso (self,FazUso):
         self.FazUso = FazUso
@@ -862,8 +873,11 @@ class Prescricao(object):
     def setQtdAdm(self, QtdAdm):
         self.qtdAdmin = QtdAdm
 
-    def setIdItem(self, idItem):
-        self.id_item = idItem
+    def setNomeAntigo(self, nomeAntigo):
+        self.nomeAntigo = nomeAntigo
+
+    def setNomeItem(self, nomeItem):
+        self.nomeItem = nomeItem
 
     def setIdUsuario(self, idUsuario):
         self.id_usuario = idUsuario
@@ -884,12 +898,35 @@ class Prescricao(object):
     def getIdUsuario(self):
         return self.id_usuario
 
-    def getIdItem(self):
-        return self.id_item
+    def getNomeItem(self):
+        return self.nomeItem
 
     def getIdPaciente(self):
         return self.id_Paciente
+
+    def getPrescricao(self):
+    	return self.prescricao
 #=============================================================
+
+    def verificaPrescricao(self, id_Paciente, nomeItem):
+        dbPresc = BDprescricao()
+        return dbPresc.existePrescricao(id_Paciente, nomeItem)
+
+    def gravaBDprescricao(self, id_paciente):
+        dbPresc = BDprescricao()
+        dbPresc.gravaPrescricaoBD(self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        dbPresc.db.close()
+
+    def atualizaPrescricao(self):
+        dbPresc = BDprescricao()
+        dbPresc.atualizaPrescricaoBD(self.nomeAntigo, self.nomeItem, self.qtdAdmin, self.FazUso, self.id_Paciente, self.id_usuario)
+        dbPresc.db.close()
+
+    def recuperaBDprescricao(self):
+        dbPresc = BDprescricao()
+        self.prescricao = dbPresc.recuperaPrescPaciente(self.id_Paciente)
+        dbPresc.db.close()
+
 
 #===================================================================================================================
 class Saida(object):
@@ -898,23 +935,38 @@ class Saida(object):
     def __init__(self):
         self.descarte = ""
         self.item_id = ""
-        self.usiario_id =""
-        self.QtdSaida = ""
-
-    def setItem_id(self, id):
-        self.item_id = id
+        self.usuario_id =""
+        self.paciente_id = ""
+        self.prescricao_id = ""
+        self.qtdSaida = ""
+        self.saida = ""
 
     def setDataSaida(self, dataSaida):
         self.data_saida = dataSaida
 
+    def setQtdPrescrita(self, QtdPrescrita):
+    	self.qtdPrescrita = QtdPrescrita
+
     def setQtdSaida(self, QtdSaida):
-        self.QtdSaida = QtdSaida
+        self.qtdSaida = QtdSaida
+
+    def setQtdRestante(self, QtdRestante):
+    	self.qtdRestante = QtdRestante
 
     def setDescarte(self, descarte):
         self.descarte = descarte
 
-    def setUsuario_id(self, usuario_id):
+    def setIdUsuario(self, usuario_id):
         self.usuario_id = usuario_id
+
+    def setIdPaciente(self, paciente_id):
+        self.paciente_id = paciente_id
+
+    def setIdPrescricao(self, prescricao_id):
+        self.prescricao_id = prescricao_id
+
+    def setIdItem(self, id):
+        self.item_id = id
 
 # ============================================================
 
@@ -922,11 +974,51 @@ class Saida(object):
         return self.data_saida
 
     def getQtdSaida(self):
-        return self.QtdSaida
+        return self.qtdSaida
 
     def getDescarte(self):
         return self.descarte
+
+    def getSaida(self):
+    	return self.saida
 # =============================================================
+    def gravaBDsaida(self):
+    	bdSaida = BDsaida()
+    	print('\nQTD Prescrita: ' + str(self.qtdPrescrita))
+    	print('QTD Retirada: ' + str(self.qtdSaida))
+    	print('QTD Sobrou: ' + str(self.qtdRestante))
+    	print('ID usuario: ' + str(self.usuario_id))
+    	print('ID prescricao: ' + str(self.prescricao_id))
+    	print('ID paciente: ' + str(self.paciente_id))
+    	print('ID item: ' + str(self.item_id))
+    	bdSaida.gravaSaida(self.qtdPrescrita, self.qtdSaida, self.qtdRestante, self.usuario_id, self.prescricao_id, self.paciente_id, self.item_id)
+    	bdSaida.db.close()
+
+    def atualizaBDsaida(self, saida_id):
+    	bdSaida = BDsaida()
+    	print('\nQTD Prescrita: ' + str(self.qtdPrescrita))
+    	print('QTD Retirada: ' + str(self.qtdSaida))
+    	print('QTD Sobrou: ' + str(self.qtdRestante))
+    	print('ID usuario: ' + str(self.usuario_id))
+    	print('ID prescricao: ' + str(self.prescricao_id))
+    	print('ID paciente: ' + str(self.paciente_id))
+    	print('ID item: ' + str(self.item_id))
+    	bdSaida.atualizaSaida(saida_id, self.qtdPrescrita, self.qtdSaida, self.qtdRestante, self.usuario_id, self.prescricao_id, self.paciente_id, self.item_id)
+    	bdSaida.db.close()
+
+    def existeSaida(self, paciente_id):
+    	bdSaida = BDsaida()
+    	if bdSaida.verificaSaidaDiaria(paciente_id):
+    		bdSaida.db.close()
+    		return True
+    	else:
+    		bdSaida.db.close()
+    		return False
+
+    def recuperaBDsaida(self, paciente_id):
+    	bdSaida = BDsaida()
+    	self.saida = bdSaida.recuperaSaida(paciente_id)
+
 
 #========================================================================================================================
 class Usuario(object):
@@ -991,12 +1083,7 @@ class Usuario(object):
 
     def validaExcluido(self,nome):
         bdUsu = BDusuario()
-        if bdUsu.verificaExcluido(nome):
-            bdUsu.db.close()
-            return True
-        else:
-            bdUsu.db.close()
-            return False
+        return bdUsu.verificaExcluido(nome)
 
     def insereBDusuario(self):
         bdUsu = BDusuario()
@@ -1038,14 +1125,1460 @@ class Usuario(object):
         bdUsu = BDusuario()
         return bdUsu.recuperaIDusuarioBD(nomeUsu)
 
-
-
 #=======================================================================================================
-class Ui_BaixaProduto(object):
+#=======================================================================================================
+
+class BaixaItem(QtWidgets.QWidget):
+    cont = 0
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.nomeMedInvalido = None
+        self.loteMedInvalido = None
+        self.nomeMedDuplicado = None
+        self.prescricao_id = []
+        self.saida_id = []
+        self.prescricao = Prescricao()
+        self.setupUi(self)
+
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
-        Form.setFixedSize(573, 423)
+        Form.setFixedSize(582, 449)
+        Form.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
+
+        self.fontLabel = QtGui.QFont()
+        self.fontLabel.setFamily("Arial")
+        self.fontLabel.setPointSize(12)
+        self.fontLabel.setBold(True)
+        self.fontLabel.setWeight(25)
+
+        fontQtd = QtGui.QFont()
+        fontQtd.setFamily("Arial")
+
+        fontMed = QtGui.QFont()
+        fontMed.setFamily("Arial")
+
+        self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
+        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(460, 100, 91, 28))
+        self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
+
+        self.label_Paciente = QtWidgets.QLabel(Form)
+        self.label_Paciente.setGeometry(QtCore.QRect(18, 35, 55, 16))
+        self.label_Paciente.setObjectName("label_Paciente")
+
+        self.pushButton_Retirar = QtWidgets.QPushButton(Form)
+        self.pushButton_Retirar.setGeometry(QtCore.QRect(460, 180, 93, 28))
+        self.pushButton_Retirar.setObjectName("pushButton_Retirar")
+        self.pushButton_Retirar.setVisible(False)
+
+        self.pushButton_RetirarRestante = QtWidgets.QPushButton(Form)
+        self.pushButton_RetirarRestante.setGeometry(QtCore.QRect(460, 180, 93, 28))
+        self.pushButton_RetirarRestante.setObjectName("pushButton_RetirarRestante")
+        self.pushButton_RetirarRestante.setVisible(False)
+
+        self.pushButton_Buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
+        self.pushButton_Buscar.setObjectName("pushButton_Buscar")
+
+
+        self.pushButton_Limpar = QtWidgets.QPushButton(Form)
+        self.pushButton_Limpar.setGeometry(QtCore.QRect(460, 142, 93, 28))
+        self.pushButton_Limpar.setObjectName("pushButton_Limpar")
+
+        self.label_Erro = QtWidgets.QLabel(Form)
+        self.label_Erro.setFont(self.fontLabel)
+        self.label_Erro.setGeometry(QtCore.QRect(50, 55, 450, 30))
+        self.label_Erro.setObjectName("label_Erro")
+        self.label_Erro.setStyleSheet('QLabel {color: red}')
+
+        self.scrollArea = QtWidgets.QScrollArea(Form)
+        self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        
+        self.scrollAreaWidgetContents = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 332, 402))
+        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+
+        self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents)
+        self.gridLayout.setObjectName("gridLayout")
+
+        self.checkBox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox.setObjectName("checkBox")
+        self.gridLayout.addWidget(self.checkBox, 0, 2, 1, 1)
+        
+        self.checkBox_3 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_3.setObjectName("checkBox_3")
+        self.gridLayout.addWidget(self.checkBox_3, 2, 2, 1, 1)
+
+        self.checkBox_2 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_2.setObjectName("checkBox_2")
+        self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
+
+        self.label_nomePac = QtWidgets.QLabel(Form)
+        self.label_nomePac.setFont(self.fontLabel)
+        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
+        self.label_nomePac.setObjectName("label_nomePac")
+        self.label_nomePac.setText("Paciente:")
+
+        self.line_nomePac = QtWidgets.QLineEdit(Form)
+        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
+        self.line_nomePac.setObjectName("line_nomePac")
+        self.line_nomePac.setReadOnly(True)
+        self.line_nomePac.setMaxLength(15)
+        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
+        self.line_sobrenomePac.setReadOnly(True)
+        self.line_sobrenomePac.setMaxLength(40)
+
+        self.line_cpfPac = QtWidgets.QLineEdit(Form)
+        self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
+        self.line_cpfPac.setObjectName("line_cpfPac")
+        self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
+        self.line_cpfPac.setMaxLength(11)
+
+        self.line_lote = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote.setFont(fontMed)
+        self.line_lote.setMaxLength(30)
+        self.line_lote.setObjectName("line_lote")
+        self.line_lote.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote))
+        self.gridLayout.addWidget(self.line_lote, 0, 2, 1, 1)
+
+        self.line_lote_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_2.setFont(fontMed)
+        self.line_lote_2.setMaxLength(30)
+        self.line_lote_2.setObjectName("line_lote_2")
+        self.line_lote_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_2))
+        self.gridLayout.addWidget(self.line_lote_2, 1, 2, 1, 1)
+
+        self.line_lote_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_3.setFont(fontMed)
+        self.line_lote_3.setMaxLength(30)
+        self.line_lote_3.setObjectName("line_lote_3")
+        self.line_lote_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_3))
+        self.gridLayout.addWidget(self.line_lote_3, 2, 2, 1, 1)
+
+        self.line_lote_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_4.setFont(fontMed)
+        self.line_lote_4.setMaxLength(30)
+        self.line_lote_4.setObjectName("line_lote_4")
+        self.line_lote_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_4))
+        self.gridLayout.addWidget(self.line_lote_4, 3, 2, 1, 1)
+
+        self.line_lote_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_5.setFont(fontMed)
+        self.line_lote_5.setMaxLength(30)
+        self.line_lote_5.setObjectName("line_lote_5")
+        self.line_lote_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_5))
+        self.gridLayout.addWidget(self.line_lote_5, 4, 2, 1, 1)
+
+        self.line_lote_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_6.setFont(fontMed)
+        self.line_lote_6.setMaxLength(30)
+        self.line_lote_6.setObjectName("line_lote_6")
+        self.line_lote_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_6))
+        self.gridLayout.addWidget(self.line_lote_6, 5, 2, 1, 1)
+
+        self.line_lote_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_7.setFont(fontMed)
+        self.line_lote_7.setMaxLength(30)
+        self.line_lote_7.setObjectName("line_lote_7")
+        self.line_lote_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_7))
+        self.gridLayout.addWidget(self.line_lote_7, 6, 2, 1, 1)
+
+        self.line_lote_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_8.setFont(fontMed)
+        self.line_lote_8.setMaxLength(30)
+        self.line_lote_8.setObjectName("line_lote_8")
+        self.line_lote_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_8))
+        self.gridLayout.addWidget(self.line_lote_8, 7, 2, 1, 1)
+
+        self.line_lote_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_9.setFont(fontMed)
+        self.line_lote_9.setMaxLength(30)
+        self.line_lote_9.setObjectName("line_lote_9")
+        self.line_lote_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_9))
+        self.gridLayout.addWidget(self.line_lote_9, 8, 2, 1, 1)
+
+        self.line_lote_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_10.setFont(fontMed)
+        self.line_lote_10.setMaxLength(30)
+        self.line_lote_10.setObjectName("line_lote_10")
+        self.line_lote_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_10))
+        self.gridLayout.addWidget(self.line_lote_10, 9, 2, 1, 1)
+
+        self.line_lote_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_11.setEnabled(True)
+        self.line_lote_11.setFont(fontMed)
+        self.line_lote_11.setMaxLength(30)
+        self.line_lote_11.setObjectName("line_lote_11")
+        self.line_lote_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_11))
+        self.gridLayout.addWidget(self.line_lote_11, 10, 2, 1, 1)
+
+        self.line_lote_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_12.setEnabled(True)
+        self.line_lote_12.setFont(fontMed)
+        self.line_lote_12.setMaxLength(30)
+        self.line_lote_12.setObjectName("line_lote_12")
+        self.line_lote_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_12))
+        self.gridLayout.addWidget(self.line_lote_12, 11, 2, 1, 1)
+
+        self.line_lote_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_13.setEnabled(True)
+        self.line_lote_13.setFont(fontMed)
+        self.line_lote_13.setMaxLength(30)
+        self.line_lote_13.setObjectName("line_lote_13")
+        self.line_lote_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_13))
+        self.gridLayout.addWidget(self.line_lote_13, 12, 2, 1, 1)
+
+        self.line_lote_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_14.setEnabled(True)
+        self.line_lote_14.setFont(fontMed)
+        self.line_lote_14.setMaxLength(30)
+        self.line_lote_14.setObjectName("line_lote_14")
+        self.line_lote_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_14))
+        self.gridLayout.addWidget(self.line_lote_14, 13, 2, 1, 1)
+
+        self.line_lote_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_lote_15.setFont(fontMed)
+        self.line_lote_15.setEnabled(True)
+        self.line_lote_15.setMaxLength(30)
+        self.line_lote_15.setObjectName("line_lote_15")
+        self.line_lote_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_lote_15))
+        self.gridLayout.addWidget(self.line_lote_15, 14, 2, 1, 1)
+
+
+        self.line_med1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1.setFont(fontMed)
+        self.line_med1.setMaxLength(30)
+        self.line_med1.setObjectName("line_med1")
+        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1))
+        self.gridLayout.addWidget(self.line_med1, 0, 0, 1, 1)
+
+        self.line_med1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_2.setFont(fontMed)
+        self.line_med1_2.setMaxLength(30)
+        self.line_med1_2.setObjectName("line_med1_2")
+        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_2))
+        self.gridLayout.addWidget(self.line_med1_2, 1, 0, 1, 1)
+
+        self.line_med1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_3.setFont(fontMed)
+        self.line_med1_3.setMaxLength(30)
+        self.line_med1_3.setObjectName("line_med1_3")
+        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_3))
+        self.gridLayout.addWidget(self.line_med1_3, 2, 0, 1, 1)
+
+        self.line_med1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_4.setFont(fontMed)
+        self.line_med1_4.setMaxLength(30)
+        self.line_med1_4.setObjectName("line_med1_4")
+        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_4))
+        self.gridLayout.addWidget(self.line_med1_4, 3, 0, 1, 1)
+
+        self.line_med1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_5.setFont(fontMed)
+        self.line_med1_5.setMaxLength(30)
+        self.line_med1_5.setObjectName("line_med1_5")
+        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_5))
+        self.gridLayout.addWidget(self.line_med1_5, 4, 0, 1, 1)
+
+        self.line_med1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_6.setFont(fontMed)
+        self.line_med1_6.setMaxLength(30)
+        self.line_med1_6.setObjectName("line_med1_6")
+        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_6))
+        self.gridLayout.addWidget(self.line_med1_6, 5, 0, 1, 1)
+
+        self.line_med1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_7.setFont(fontMed)
+        self.line_med1_7.setMaxLength(30)
+        self.line_med1_7.setObjectName("line_med1_7")
+        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_7))
+        self.gridLayout.addWidget(self.line_med1_7, 6, 0, 1, 1)
+
+        self.line_med1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_8.setFont(fontMed)
+        self.line_med1_8.setMaxLength(30)
+        self.line_med1_8.setObjectName("line_med1_8")
+        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_8))
+        self.gridLayout.addWidget(self.line_med1_8, 7, 0, 1, 1)
+
+        self.line_med1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_9.setFont(fontMed)
+        self.line_med1_9.setMaxLength(30)
+        self.line_med1_9.setObjectName("line_med1_9")
+        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_9))
+        self.gridLayout.addWidget(self.line_med1_9, 8, 0, 1, 1)
+
+        self.line_med1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_10.setFont(fontMed)
+        self.line_med1_10.setMaxLength(30)
+        self.line_med1_10.setObjectName("line_med1_10")
+        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_10))
+        self.gridLayout.addWidget(self.line_med1_10, 9, 0, 1, 1)
+
+        self.line_med1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_11.setEnabled(True)
+        self.line_med1_11.setFont(fontMed)
+        self.line_med1_11.setMaxLength(30)
+        self.line_med1_11.setObjectName("line_med1_11")
+        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_11))
+        self.gridLayout.addWidget(self.line_med1_11, 10, 0, 1, 1)
+
+        self.line_med1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_12.setEnabled(True)
+        self.line_med1_12.setFont(fontMed)
+        self.line_med1_12.setMaxLength(30)
+        self.line_med1_12.setObjectName("line_med1_12")
+        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_12))
+        self.gridLayout.addWidget(self.line_med1_12, 11, 0, 1, 1)
+
+        self.line_med1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_13.setEnabled(True)
+        self.line_med1_13.setFont(fontMed)
+        self.line_med1_13.setMaxLength(30)
+        self.line_med1_13.setObjectName("line_med1_13")
+        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_13))
+        self.gridLayout.addWidget(self.line_med1_13, 12, 0, 1, 1)
+
+        self.line_med1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_14.setEnabled(True)
+        self.line_med1_14.setFont(fontMed)
+        self.line_med1_14.setMaxLength(30)
+        self.line_med1_14.setObjectName("line_med1_14")
+        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_14))
+        self.gridLayout.addWidget(self.line_med1_14, 13, 0, 1, 1)
+
+        self.line_med1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_15.setFont(fontMed)
+        self.line_med1_15.setEnabled(True)
+        self.line_med1_15.setMaxLength(30)
+        self.line_med1_15.setObjectName("line_med1_15")
+        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_15))
+        self.gridLayout.addWidget(self.line_med1_15, 14, 0, 1, 1)
+
+        self.line_qtd1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1.setFont(fontQtd)
+        self.line_qtd1.setMaxLength(2)
+        self.line_qtd1.setObjectName("line_qtd1")
+        self.line_qtd1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1))
+        self.gridLayout.addWidget(self.line_qtd1, 0, 1, 1, 1)
+
+        self.line_qtd1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_2.setFont(fontQtd)
+        self.line_qtd1_2.setMaxLength(2)
+        self.line_qtd1_2.setObjectName("line_qtd1_2")
+        self.line_qtd1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_2))
+        self.gridLayout.addWidget(self.line_qtd1_2, 1, 1, 1, 1)
+
+        self.line_qtd1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_3.setFont(fontQtd)
+        self.line_qtd1_3.setMaxLength(2)
+        self.line_qtd1_3.setObjectName("line_qtd1_3")
+        self.line_qtd1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_3))
+        self.gridLayout.addWidget(self.line_qtd1_3, 2, 1, 1, 1)
+
+        self.line_qtd1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_4.setFont(fontQtd)
+        self.line_qtd1_4.setMaxLength(2)
+        self.line_qtd1_4.setObjectName("line_qtd1_4")
+        self.line_qtd1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_4))
+        self.gridLayout.addWidget(self.line_qtd1_4, 3, 1, 1, 1)
+
+        self.line_qtd1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_5.setFont(fontQtd)
+        self.line_qtd1_5.setMaxLength(2)
+        self.line_qtd1_5.setObjectName("line_qtd1_5")
+        self.line_qtd1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_5))
+        self.gridLayout.addWidget(self.line_qtd1_5, 4, 1, 1, 1)
+
+        self.line_qtd1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_6.setFont(fontQtd)
+        self.line_qtd1_6.setMaxLength(2)
+        self.line_qtd1_6.setObjectName("line_qtd1_6")
+        self.line_qtd1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_6))
+        self.gridLayout.addWidget(self.line_qtd1_6, 5, 1, 1, 1)
+
+        self.line_qtd1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_7.setFont(fontQtd)
+        self.line_qtd1_7.setMaxLength(2)
+        self.line_qtd1_7.setObjectName("line_qtd1_7")
+        self.line_qtd1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_7))
+        self.gridLayout.addWidget(self.line_qtd1_7, 6, 1, 1, 1)
+
+        self.line_qtd1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_8.setFont(fontQtd)
+        self.line_qtd1_8.setMaxLength(2)
+        self.line_qtd1_8.setObjectName("line_qtd1_8")
+        self.line_qtd1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_8))
+        self.gridLayout.addWidget(self.line_qtd1_8, 7, 1, 1, 1)
+
+        self.line_qtd1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_9.setFont(fontQtd)
+        self.line_qtd1_9.setMaxLength(2)
+        self.line_qtd1_9.setObjectName("line_qtd1_9")
+        self.line_qtd1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_9))
+        self.gridLayout.addWidget(self.line_qtd1_9, 8, 1, 1, 1)
+
+        self.line_qtd1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_10.setFont(fontQtd)
+        self.line_qtd1_10.setMaxLength(2)
+        self.line_qtd1_10.setObjectName("line_qtd1_10")
+        self.line_qtd1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_10))
+        self.gridLayout.addWidget(self.line_qtd1_10, 9, 1, 1, 1)
+
+        self.line_qtd1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_11.setEnabled(True)
+        self.line_qtd1_11.setFont(fontQtd)
+        self.line_qtd1_11.setMaxLength(2)
+        self.line_qtd1_11.setObjectName("line_qtd1_11")
+        self.line_qtd1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_11))
+        self.gridLayout.addWidget(self.line_qtd1_11, 10, 1, 1, 1)
+
+        self.line_qtd1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_12.setEnabled(True)
+        self.line_qtd1_12.setFont(fontQtd)
+        self.line_qtd1_12.setMaxLength(2)
+        self.line_qtd1_12.setObjectName("line_qtd1_12")
+        self.line_qtd1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_12))
+        self.gridLayout.addWidget(self.line_qtd1_12, 11, 1, 1, 1)
+
+        self.line_qtd1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_13.setEnabled(True)
+        self.line_qtd1_13.setFont(fontQtd)
+        self.line_qtd1_13.setMaxLength(2)
+        self.line_qtd1_13.setObjectName("line_qtd1_13")
+        self.line_qtd1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_13))
+        self.gridLayout.addWidget(self.line_qtd1_13, 12, 1, 1, 1)
+
+        self.line_qtd1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_14.setEnabled(True)
+        self.line_qtd1_14.setFont(fontQtd)
+        self.line_qtd1_14.setMaxLength(2)
+        self.line_qtd1_14.setObjectName("line_qtd1_14")
+        self.line_qtd1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_14))
+        self.gridLayout.addWidget(self.line_qtd1_14, 13, 1, 1, 1)
+
+        self.line_qtd1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_15.setEnabled(True)
+        self.line_qtd1_15.setFont(fontQtd)
+        self.line_qtd1_15.setMaxLength(2)
+        self.line_qtd1_15.setObjectName("line_qtd1_15")
+        self.line_qtd1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_15))
+        self.gridLayout.addWidget(self.line_qtd1_15, 14, 1, 1, 1)
+
+        self.checkBox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox.setObjectName("checkBox")
+        self.gridLayout.addWidget(self.checkBox, 0, 3, 1, 1)
+
+        self.checkBox_2 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_2.setObjectName("checkBox_2")
+        self.gridLayout.addWidget(self.checkBox_2, 1, 3, 1, 1)
+
+        self.checkBox_3 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_3.setObjectName("checkBox_3")
+        self.gridLayout.addWidget(self.checkBox_3, 2, 3, 1, 1)
+
+        self.checkBox_4 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_4.setObjectName("checkBox_4")
+        self.gridLayout.addWidget(self.checkBox_4, 3, 3, 1, 1)
+
+        self.checkBox_5 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_5.setObjectName("checkBox_5")
+        self.gridLayout.addWidget(self.checkBox_5, 4, 3, 1, 1)
+
+        self.checkBox_6 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_6.setObjectName("checkBox_6")
+        self.gridLayout.addWidget(self.checkBox_6, 5, 3, 1, 1)
+
+        self.checkBox_7 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_7.setObjectName("checkBox_7")
+        self.gridLayout.addWidget(self.checkBox_7, 6, 3, 1, 1)
+
+        self.checkBox_8 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_8.setObjectName("checkBox_8")
+        self.gridLayout.addWidget(self.checkBox_8, 7, 3, 1, 1)
+
+        self.checkBox_9 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_9.setObjectName("checkBox_9")
+        self.gridLayout.addWidget(self.checkBox_9, 8, 3, 1, 1)
+
+        self.checkBox_10 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_10.setObjectName("checkBox_10")
+        self.gridLayout.addWidget(self.checkBox_10, 9, 3, 1, 1)
+
+        self.checkBox_11 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_11.setObjectName("checkBox_11")
+        self.gridLayout.addWidget(self.checkBox_11, 10, 3, 1, 1)
+
+        self.checkBox_12 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_12.setObjectName("checkBox_12")
+        self.gridLayout.addWidget(self.checkBox_12, 11, 3, 1, 1)
+
+        self.checkBox_13 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_13.setObjectName("checkBox_13")
+        self.gridLayout.addWidget(self.checkBox_13, 12, 3, 1, 1)
+
+        self.checkBox_14 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_14.setObjectName("checkBox_14")
+        self.gridLayout.addWidget(self.checkBox_14, 13, 3, 1, 1)
+
+        self.checkBox_15 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_15.setObjectName("checkBox_15")
+        self.gridLayout.addWidget(self.checkBox_15, 14, 3, 1, 1)
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.pushButton = QtWidgets.QPushButton(Form)
+        self.pushButton.setGeometry(QtCore.QRect(380, 100, 21, 23))
+        self.pushButton.setObjectName("+")
+        self.pushButton.clicked.connect(self.maisCampos)
+
+        self.label_Medicamento = QtWidgets.QLabel(Form)
+        self.label_Medicamento.setGeometry(QtCore.QRect(30, 80, 129, 16))
+        self.label_Medicamento.setObjectName("label_Medicamento")
+        self.label_Quantidade = QtWidgets.QLabel(Form)
+        self.label_Quantidade.setGeometry(QtCore.QRect(155, 80, 57, 16))
+        self.label_Quantidade.setObjectName("label_Quantidade")
+        self.label_Lote = QtWidgets.QLabel(Form)
+        self.label_Lote.setGeometry(QtCore.QRect(235, 80, 30, 16))
+        self.label_Lote.setObjectName("label_Lote")
+        self.label_FazUso = QtWidgets.QLabel(Form)
+        self.label_FazUso.setGeometry(QtCore.QRect(333, 80, 50, 16))
+        self.label_FazUso.setObjectName("label_FazUso")
+
+        self.line_med1_11.setVisible(False)
+        self.line_med1_12.setVisible(False)
+        self.line_med1_13.setVisible(False)
+        self.line_med1_14.setVisible(False)
+        self.line_med1_15.setVisible(False)
+
+        self.line_qtd1_11.setVisible(False)
+        self.line_qtd1_12.setVisible(False)
+        self.line_qtd1_13.setVisible(False)
+        self.line_qtd1_14.setVisible(False)
+        self.line_qtd1_15.setVisible(False)
+
+        self.line_lote_11.setVisible(False)
+        self.line_lote_12.setVisible(False)
+        self.line_lote_13.setVisible(False)
+        self.line_lote_14.setVisible(False)
+        self.line_lote_15.setVisible(False)
+
+        self.checkBox_11.setVisible(False)
+        self.checkBox_12.setVisible(False)
+        self.checkBox_13.setVisible(False)
+        self.checkBox_14.setVisible(False)
+        self.checkBox_15.setVisible(False)
+
+        self.line_med1.setPlaceholderText("Med 1")
+        self.line_med1_2.setPlaceholderText("Med 2")
+        self.line_med1_3.setPlaceholderText("Med 3")
+        self.line_med1_4.setPlaceholderText("Med 4")
+        self.line_med1_5.setPlaceholderText("Med 5")
+        self.line_med1_6.setPlaceholderText("Med 6")
+        self.line_med1_7.setPlaceholderText("Med 7")
+        self.line_med1_8.setPlaceholderText("Med 8")
+        self.line_med1_9.setPlaceholderText("Med 9")
+        self.line_med1_10.setPlaceholderText("Med 10")
+        self.line_med1_11.setPlaceholderText("Med 11")
+        self.line_med1_12.setPlaceholderText("Med 12")
+        self.line_med1_13.setPlaceholderText("Med 13")
+        self.line_med1_14.setPlaceholderText("Med 14")
+        self.line_med1_15.setPlaceholderText("Med 15")
+
+        self.line_med1.setReadOnly(True)
+        self.line_med1_2.setReadOnly(True)
+        self.line_med1_3.setReadOnly(True)
+        self.line_med1_4.setReadOnly(True)
+        self.line_med1_5.setReadOnly(True)
+        self.line_med1_6.setReadOnly(True)
+        self.line_med1_7.setReadOnly(True)
+        self.line_med1_8.setReadOnly(True)
+        self.line_med1_9.setReadOnly(True)
+        self.line_med1_10.setReadOnly(True)
+        self.line_med1_11.setReadOnly(True)
+        self.line_med1_12.setReadOnly(True)
+        self.line_med1_13.setReadOnly(True)
+        self.line_med1_14.setReadOnly(True)
+        self.line_med1_15.setReadOnly(True)
+
+        self.checkBox.setEnabled(False)
+        self.checkBox_2.setEnabled(False)
+        self.checkBox_3.setEnabled(False)
+        self.checkBox_4.setEnabled(False)
+        self.checkBox_5.setEnabled(False)
+        self.checkBox_6.setEnabled(False)
+        self.checkBox_7.setEnabled(False)
+        self.checkBox_8.setEnabled(False)
+        self.checkBox_9.setEnabled(False)
+        self.checkBox_10.setEnabled(False)
+        self.checkBox_11.setEnabled(False)
+        self.checkBox_12.setEnabled(False)
+        self.checkBox_13.setEnabled(False)
+        self.checkBox_14.setEnabled(False)
+        self.checkBox_15.setEnabled(False)
+
+        self.retranslateUi(Form)
+
+        self.pushButton_Retirar.clicked.connect(self.copiarCampos)
+        self.pushButton_Retirar.clicked.connect(self.retirarPrescrito)
+        self.pushButton_RetirarRestante.clicked.connect(self.copiarCampos)
+        self.pushButton_RetirarRestante.clicked.connect(self.retirarRestante)
+        self.pushButton_Limpar.clicked.connect(self.limparLotes)
+        self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
+        self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
+        self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
+
+        QtCore.QMetaObject.connectSlotsByName(Form)
+        Form.setTabOrder(self.line_cpfPac, self.line_med1)
+        Form.setTabOrder(self.line_med1, self.line_qtd1)
+        Form.setTabOrder(self.line_qtd1, self.checkBox)
+        Form.setTabOrder(self.checkBox, self.line_med1_2)
+        Form.setTabOrder(self.line_med1_2, self.line_qtd1_2)
+        Form.setTabOrder(self.line_qtd1_2, self.checkBox_2)
+        Form.setTabOrder(self.checkBox_2, self.line_med1_3)
+        Form.setTabOrder(self.line_med1_3, self.line_qtd1_3)
+        Form.setTabOrder(self.line_qtd1_3, self.checkBox_3)
+        Form.setTabOrder(self.checkBox_3, self.line_med1_4)
+        Form.setTabOrder(self.line_med1_4, self.line_qtd1_4)
+        Form.setTabOrder(self.line_qtd1_4, self.checkBox_4)
+        Form.setTabOrder(self.checkBox_4, self.line_med1_5)
+        Form.setTabOrder(self.line_med1_5, self.line_qtd1_5)
+        Form.setTabOrder(self.line_qtd1_5, self.checkBox_5)
+        Form.setTabOrder(self.checkBox_5, self.line_med1_6)
+        Form.setTabOrder(self.line_med1_6, self.line_qtd1_6)
+        Form.setTabOrder(self.line_qtd1_6, self.checkBox_6)
+        Form.setTabOrder(self.checkBox_6, self.line_med1_7)
+        Form.setTabOrder(self.line_med1_7, self.line_qtd1_7)
+        Form.setTabOrder(self.line_qtd1_7, self.checkBox_7)
+        Form.setTabOrder(self.checkBox_7, self.line_med1_8)
+        Form.setTabOrder(self.line_med1_8, self.line_qtd1_8)
+        Form.setTabOrder(self.line_qtd1_8, self.checkBox_8)
+        Form.setTabOrder(self.checkBox_8, self.line_med1_9)
+        Form.setTabOrder(self.line_med1_9, self.line_qtd1_9)
+        Form.setTabOrder(self.line_qtd1_9, self.checkBox_9)
+        Form.setTabOrder(self.checkBox_9, self.line_med1_10)
+        Form.setTabOrder(self.line_med1_10, self.line_qtd1_10)
+        Form.setTabOrder(self.line_qtd1_10, self.checkBox_10)
+        Form.setTabOrder(self.checkBox_10, self.line_med1_11)
+        Form.setTabOrder(self.line_med1_11, self.line_qtd1_11)
+        Form.setTabOrder(self.line_qtd1_11, self.checkBox_11)
+        Form.setTabOrder(self.checkBox_11, self.line_med1_12)
+        Form.setTabOrder(self.line_med1_12, self.line_qtd1_12)
+        Form.setTabOrder(self.line_qtd1_12, self.checkBox_12)
+        Form.setTabOrder(self.checkBox_12, self.line_med1_13)
+        Form.setTabOrder(self.line_med1_13, self.line_qtd1_13)
+        Form.setTabOrder(self.line_qtd1_13, self.checkBox_13)
+        Form.setTabOrder(self.checkBox_13, self.line_med1_14)
+        Form.setTabOrder(self.line_med1_14, self.line_qtd1_14)
+        Form.setTabOrder(self.line_qtd1_14, self.checkBox_14)
+        Form.setTabOrder(self.checkBox_14, self.line_med1_15)
+        Form.setTabOrder(self.line_med1_15, self.line_qtd1_15)
+        Form.setTabOrder(self.line_qtd1_15, self.checkBox_15)
+        Form.setTabOrder(self.checkBox_15, self.pushButton_MenuPrin)
+        Form.setTabOrder(self.pushButton_MenuPrin, self.pushButton_Limpar)
+        Form.setTabOrder(self.pushButton_Limpar, self.pushButton_Retirar)
+        Form.setTabOrder(self.pushButton_Retirar, self.pushButton)
+        Form.setTabOrder(self.pushButton, self.scrollArea)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Baixa do restoque por paciente"))
+        Form.setToolTip(_translate("Form", "Adicionar mais campos"))
+        self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
+        self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
+        self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
+        self.label_Paciente.setText(_translate("Form", "Paciente: "))
+        self.line_cpfPac.setToolTip(_translate("Form", "informe o cpf da paciente que deseja ver a prescrição"))
+        self.line_cpfPac.setPlaceholderText("informe o cpf do paciente")
+        self.pushButton_Retirar.setToolTip(_translate("Form", "Retira pela prescrição do paciente"))
+        self.pushButton_Retirar.setText(_translate("Form", "Retirar"))
+        self.pushButton_Retirar.setShortcut(_translate("Form", "Ctrl+S"))
+        self.pushButton_RetirarRestante.setToolTip(_translate("Form", "Retira pela saida do paciente"))
+        self.pushButton_RetirarRestante.setText(_translate("Form", "Retirar restante"))
+        self.pushButton_RetirarRestante.setShortcut(_translate("Form", "Ctrl+S"))
+        self.pushButton_Buscar.setToolTip(_translate("Form", "Busca a prescrição do paciente"))
+        self.pushButton_Buscar.setText(_translate("Form", "Buscar"))
+        self.pushButton_Buscar.setShortcut(_translate("Form", "Return"))
+        self.pushButton_Limpar.setToolTip(_translate("Form", "Limpa os campos digitados"))
+        self.pushButton_Limpar.setText(_translate("Form", "Limpar"))
+        self.pushButton_Limpar.setShortcut(_translate("Form", "Ctrl+Del"))
+
+        self.checkBox.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_2.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_3.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_4.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_5.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_6.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_7.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_8.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_9.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_10.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_11.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_12.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_13.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_14.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_15.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+
+        self.line_lote.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_2.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_3.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_4.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_5.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_6.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_7.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_8.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_9.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_10.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_11.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_12.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_13.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_14.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+        self.line_lote_15.setToolTip(_translate("form", "Informe o lote do medicamento que deseja retirar"))
+
+
+        self.line_qtd1_3.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_8.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_2.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_3.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_4.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_4.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_2.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_5.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_6.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_6.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_5.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_7.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_7.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_11.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_12.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_13.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_9.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_10.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_14.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_9.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_14.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_11.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_11.setWhatsThis(_translate("Form", "<html><head/><body><p>setVisible(False)</p></body></html>"))
+        self.line_qtd1_8.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_13.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_15.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_12.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_15.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_10.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.pushButton.setToolTip(_translate("Form", "Adiciona mais campos"))
+        self.pushButton.setText(_translate("Form", "+"))
+        self.pushButton.setShortcut(_translate("Form", "Ctrl++"))
+        self.label_Medicamento.setText(_translate("Form", "Nome Medicamento:"))
+        self.label_Quantidade.setText(_translate("Form", "Qtd diária:"))
+        self.label_Lote.setText(_translate("Form", "Lote:"))
+        self.label_FazUso.setText(_translate("Form", "Faz Uso?"))
+
+    def menuPrincipal(self):
+    	self.switch_window.emit()
+
+    def copiarCampos(self):
+        self.line_med1.copy()
+        self.line_med1_2.copy()
+        self.line_med1_3.copy()
+        self.line_med1_4.copy()
+        self.line_med1_5.copy()
+        self.line_med1_6.copy()
+        self.line_med1_7.copy()
+        self.line_med1_8.copy()
+        self.line_med1_9.copy()
+        self.line_med1_10.copy()
+        self.line_med1_11.copy()
+        self.line_med1_12.copy()
+        self.line_med1_13.copy()
+        self.line_med1_14.copy()
+        self.line_med1_15.copy()
+        self.line_qtd1.copy()
+        self.line_qtd1_2.copy()
+        self.line_qtd1_3.copy()
+        self.line_qtd1_4.copy()
+        self.line_qtd1_5.copy()
+        self.line_qtd1_6.copy()
+        self.line_qtd1_7.copy()
+        self.line_qtd1_8.copy()
+        self.line_qtd1_9.copy()
+        self.line_qtd1_10.copy()
+        self.line_qtd1_11.copy()
+        self.line_qtd1_12.copy()
+        self.line_qtd1_13.copy()
+        self.line_qtd1_14.copy()
+        self.line_qtd1_15.copy()
+        self.line_cpfPac.copy()
+
+    def limparLotes(self):
+        self.line_lote.clear()
+        self.line_lote_2.clear()
+        self.line_lote_3.clear()
+        self.line_lote_4.clear()
+        self.line_lote_5.clear()
+        self.line_lote_6.clear()
+        self.line_lote_7.clear()
+        self.line_lote_8.clear()
+        self.line_lote_9.clear()
+        self.line_lote_10.clear()
+        self.line_lote_11.clear()
+        self.line_lote_12.clear()
+        self.line_lote_13.clear()
+        self.line_lote_14.clear()
+        self.line_lote_15.clear()
+        self.label_Erro.clear()
+
+    def limparCampos(self):
+        self.line_lote.clear()
+        self.line_lote_2.clear()
+        self.line_lote_3.clear()
+        self.line_lote_4.clear()
+        self.line_lote_5.clear()
+        self.line_lote_6.clear()
+        self.line_lote_7.clear()
+        self.line_lote_8.clear()
+        self.line_lote_9.clear()
+        self.line_lote_10.clear()
+        self.line_lote_11.clear()
+        self.line_lote_12.clear()
+        self.line_lote_13.clear()
+        self.line_lote_14.clear()
+        self.line_lote_15.clear()
+        self.line_med1.clear()
+        self.line_med1_2.clear()
+        self.line_med1_3.clear()
+        self.line_med1_4.clear()
+        self.line_med1_5.clear()
+        self.line_med1_6.clear()
+        self.line_med1_7.clear()
+        self.line_med1_8.clear()
+        self.line_med1_9.clear()
+        self.line_med1_10.clear()
+        self.line_med1_11.clear()
+        self.line_med1_12.clear()
+        self.line_med1_13.clear()
+        self.line_med1_14.clear()
+        self.line_med1_15.clear()
+        self.line_qtd1.clear()
+        self.line_qtd1_2.clear()
+        self.line_qtd1_3.clear()
+        self.line_qtd1_4.clear()
+        self.line_qtd1_5.clear()
+        self.line_qtd1_6.clear()
+        self.line_qtd1_7.clear()
+        self.line_qtd1_8.clear()
+        self.line_qtd1_9.clear()
+        self.line_qtd1_10.clear()
+        self.line_qtd1_11.clear()
+        self.line_qtd1_12.clear()
+        self.line_qtd1_13.clear()
+        self.line_qtd1_14.clear()
+        self.line_qtd1_15.clear()
+        self.checkBox.setChecked(False)
+        self.checkBox_2.setChecked(False)
+        self.checkBox_3.setChecked(False)
+        self.checkBox_4.setChecked(False)
+        self.checkBox_5.setChecked(False)
+        self.checkBox_6.setChecked(False)
+        self.checkBox_7.setChecked(False)
+        self.checkBox_8.setChecked(False)
+        self.checkBox_9.setChecked(False)
+        self.checkBox_10.setChecked(False)
+        self.checkBox_11.setChecked(False)
+        self.checkBox_12.setChecked(False)
+        self.checkBox_13.setChecked(False)
+        self.checkBox_14.setChecked(False)
+        self.checkBox_15.setChecked(False)
+
+    def maisCampos(self):
+        if self.cont == 0:
+            self.line_med1_11.setVisible(True)
+            self.line_qtd1_11.setVisible(True)
+            self.line_lote_11.setVisible(True)
+            self.checkBox_11.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 1:
+            self.line_med1_12.setVisible(True)
+            self.line_qtd1_12.setVisible(True)
+            self.line_lote_12.setVisible(True)
+            self.checkBox_12.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 2:
+            self.line_med1_13.setVisible(True)
+            self.line_qtd1_13.setVisible(True)
+            self.line_lote_13.setVisible(True)
+            self.checkBox_13.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 3:
+            self.line_med1_14.setVisible(True)
+            self.line_qtd1_14.setVisible(True)
+            self.line_lote_14.setVisible(True)
+            self.checkBox_14.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 4:
+            self.line_med1_15.setVisible(True)
+            self.line_qtd1_15.setVisible(True)
+            self.line_lote_15.setVisible(True)
+            self.checkBox_15.setVisible(True)
+            self.cont = self.cont+1
+            return None
+
+    def lerSeqCampos(self):
+        if self.line_med1.text() and self.line_lote:
+            if self.checkBox.isChecked():
+                vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 1)
+            else:
+                vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_2.text() and self.line_lote_2: 
+            if self.checkBox_2.isChecked():
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 1)
+            else:
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_3.text() and self.line_lote_3: 
+            if self.checkBox_3.isChecked():
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 1)
+            else:
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_4.text()  and self.line_lote_4: 
+            if self.checkBox_4.isChecked():
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.line_lote_4.text(), 1)
+            else:
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.line_lote_4.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_5.text(): 
+            if self.checkBox_5.isChecked():
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.line_lote_5.text(), 1)
+            else:
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), self.line_lote_5.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_6.text(): 
+            if self.checkBox_6.isChecked():
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.line_lote_6.text(), 1)
+            else:
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), self.line_lote_6.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_7.text(): 
+            if self.checkBox_7.isChecked():
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.line_lote_7.text(), 1)
+            else:
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), self.line_lote_7.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_8.text(): 
+            if self.checkBox_8.isChecked():
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.line_lote_7.text(), 1)
+            else:
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), self.line_lote_7.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_9.text(): 
+            if self.checkBox_9.isChecked():
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.line_lote_9.text(), 1)
+            else:
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), self.line_lote_9.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_10.text(): 
+            if self.checkBox_10.isChecked():
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.line_lote_10.text(), 1)
+            else:
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), self.line_lote_10.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_11.text(): 
+            if self.checkBox_11.isChecked():
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.line_lote_11.text(), 1)
+            else:
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), self.line_lote_11.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_12.text(): 
+            if self.checkBox_12.isChecked():
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.line_lote_12.text(), 1)
+            else:
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), self.line_lote_12.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_13.text(): 
+            if self.checkBox_13.isChecked():
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.line_lote_13.text(), 1)
+            else:
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), self.line_lote_13.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_14.text(): 
+            if self.checkBox_14.isChecked():
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.line_lote_14.text(), 1)
+            else:
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), self.line_lote_14.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_15.text(): 
+            if self.checkBox_15.isChecked():
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.line_lote_15.text(), 1)
+            else:
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), self.line_lote_15.text(), 0)
+            self.vetMed.append(vet)
+
+    def preencheCampos(self, prescricao):
+    	self.limparCampos()
+    	self.label_Erro.clear()
+    	if len(prescricao)>0 and prescricao[0][3]:
+            self.prescricao_id.append(prescricao[0][0])
+            self.line_med1.setText(prescricao[0][1])
+            self.line_qtd1.setText(str(prescricao[0][2]))
+            if prescricao[0][3] == 1:
+                self.checkBox.setChecked(True)
+
+    	if len(prescricao)>1 and prescricao[1][3]:
+            self.prescricao_id.append(prescricao[1][0])
+            self.line_med1_2.setText(prescricao[1][1])
+            self.line_qtd1_2.setText(str(prescricao[1][2]))
+            if prescricao[1][3] == 1:
+                self.checkBox_2.setChecked(True)
+
+    	if len(prescricao)>2 and prescricao[2][3]:
+            self.prescricao_id.append(prescricao[2][0])
+            self.line_med1_3.setText(prescricao[2][1])
+            self.line_qtd1_3.setText(str(prescricao[2][2]))
+            if prescricao[2][3] == 1:
+                self.checkBox_3.setChecked(True)
+
+    	if len(prescricao)>3 and prescricao[3][3]:
+            self.prescricao_id.append(prescricao[3][0])
+            self.line_med1_4.setText(prescricao[3][1])
+            self.line_qtd1_4.setText(str(prescricao[3][2]))
+            if prescricao[3][3] == 1:
+                self.checkBox_4.setChecked(True)
+
+    	if len(prescricao)>4 and prescricao[4][3]:
+            self.prescricao_id.append(prescricao[4][0])
+            self.line_med1_5.setText(prescricao[4][1])
+            self.line_qtd1_5.setText(str(prescricao[4][2]))
+            if prescricao[4][3] == 1:
+                self.checkBox_5.setChecked(True)
+
+    	if len(prescricao)>5 and prescricao[5][3]:
+            self.prescricao_id.append(prescricao[5][0])
+            self.line_med1_6.setText(prescricao[5][1])
+            self.line_qtd1_6.setText(str(prescricao[5][2]))
+            if prescricao[5][3] == 1:
+                self.checkBox_6.setChecked(True)
+
+    	if len(prescricao)>6 and prescricao[6][3]:
+            self.prescricao_id.append(prescricao[6][0])
+            self.line_med1_7.setText(prescricao[6][1])
+            self.line_qtd1_7.setText(str(prescricao[6][2]))
+            if prescricao[6][3] == 1:
+                self.checkBox_7.setChecked(True)
+
+    	if len(prescricao)>7 and prescricao[7][3]:
+            self.prescricao_id.append(prescricao[7][0])
+            self.line_med1_8.setText(prescricao[7][1])
+            self.line_qtd1_8.setText(str(prescricao[7][2]))
+            if prescricao[7][3] == 1:
+                self.checkBox_8.setChecked(True)
+
+    	if len(prescricao)>8 and prescricao[8][3]:
+            self.prescricao_id.append(prescricao[8][0])
+            self.line_med1_9.setText(prescricao[8][1])
+            self.line_qtd1_9.setText(str(prescricao[8][2]))
+            if prescricao[8][3] == 1:
+                self.checkBox_9.setChecked(True)
+
+    	if len(prescricao)>9 and prescricao[9][3]:
+            self.prescricao_id.append(prescricao[9][0])
+            self.line_med1_10.setText(prescricao[9][1])
+            self.line_qtd1_10.setText(str(prescricao[9][2]))
+            if prescricao[9][3] == 1:
+                self.checkBox_10.setChecked(True)
+
+    	if len(prescricao)>10 and prescricao[10][3]:
+            self.prescricao_id.append(prescricao[10][0])
+            self.line_med1_11.setText(prescricao[10][1])
+            self.line_qtd1_11.setText(str(prescricao[10][2]))
+            if prescricao[10][3] == 1:
+                self.checkBox_11.setChecked(True)
+
+    	if len(prescricao)>11 and prescricao[11][3]:
+            self.prescricao_id.append(prescricao[11][0])
+            self.line_med1_12.setText(prescricao[11][1])
+            self.line_qtd1_12.setText(str(prescricao[11][2]))
+            if prescricao[11][3] == 1:
+                self.checkBox_12.setChecked(True)
+
+    	if len(prescricao)>12 and prescricao[12][3]:
+            self.prescricao_id.append(prescricao[12][0])
+            self.line_med1_13.setText(prescricao[12][1])
+            self.line_qtd1_13.setText(str(prescricao[12][2]))
+            if prescricao[12][3] == 1:
+                self.checkBox_13.setChecked(True)
+
+    	if len(prescricao)>13 and prescricao[13][3]:
+            self.prescricao_id.append(prescricao[13][0])
+            self.line_med1_14.setText(prescricao[13][1])
+            self.line_qtd1_14.setText(str(prescricao[13][2]))
+            if prescricao[13][3] == 1:
+                self.checkBox_14.setChecked(True)
+
+    	if len(prescricao)>14 and prescricao[14][3]:
+            self.prescricao_id.append(prescricao[14][0])
+            self.line_med1_15.setText(prescricao[14][1])
+            self.line_qtd1_15.setText(str(prescricao[14][2]))
+            if prescricao[14][3] == 1:
+                self.checkBox_15.setChecked(True)
+
+    def preencheSaidaRestante(self, saida):
+    	self.limparCampos()
+    	self.label_Erro.clear()
+    	item = Item()
+    	if len(saida)>0:
+            self.saida_id.append(saida[0][0])
+            item.recuperaItemBDitemID(saida[0][9])
+            self.line_med1.setText(item.getItem()[0][1])
+            self.line_qtd1.setText(str(saida[0][3]))
+            self.checkBox.setChecked(True)
+
+    	if len(saida)>1:
+            self.saida_id.append(saida[1][0])
+            item.recuperaItemBDitemID(saida[1][9])
+            self.line_med1_2.setText(item.getItem()[0][1])
+            self.line_qtd1_2.setText(str(saida[1][3]))
+            self.checkBox_2.setChecked(True)
+
+    	if len(saida)>2:
+            self.saida_id.append(saida[2][0])
+            item.recuperaItemBDitemID(saida[2][9])
+            self.line_med1_3.setText(item.getItem()[0][1])
+            self.line_qtd1_3.setText(str(saida[2][3]))
+            self.checkBox_3.setChecked(True)
+
+    	if len(saida)>3:
+            self.saida_id.append(saida[3][0])
+            item.recuperaItemBDitemID(saida[3][9])
+            self.line_med1_4.setText(item.getItem()[0][1])
+            self.line_qtd1_4.setText(str(saida[3][3]))
+            self.checkBox_4.setChecked(True)
+
+    	if len(saida)>4:
+            self.saida_id.append(saida[4][0])
+            item.recuperaItemBDitemID(saida[4][9])
+            self.line_med1_5.setText(item.getItem()[0][1])
+            self.line_qtd1_5.setText(str(saida[4][3]))
+            self.checkBox_5.setChecked(True)
+
+    	if len(saida)>5:
+            self.saida_id.append(saida[5][0])
+            item.recuperaItemBDitemID(saida[5][9])
+            self.line_med1_6.setText(item.getItem()[0][1])
+            self.line_qtd1_6.setText(str(saida[5][3]))
+            self.checkBox_6.setChecked(True)
+
+    	if len(saida)>6:
+            self.saida_id.append(saida[6][0])
+            item.recuperaItemBDitemID(saida[6][9])
+            self.line_med1_7.setText(item.getItem()[0][1])
+            self.line_qtd1_7.setText(str(saida[6][3]))
+            self.checkBox_7.setChecked(True)
+
+    	if len(saida)>7:
+            self.saida_id.append(saida[7][0])
+            item.recuperaItemBDitemID(saida[7][9])
+            self.line_med1_8.setText(item.getItem()[0][1])
+            self.line_qtd1_8.setText(str(saida[7][3]))
+            self.checkBox_8.setChecked(True)
+
+    	if len(saida)>8:
+            self.saida_id.append(saida[8][0])
+            item.recuperaItemBDitemID(saida[8][9])
+            self.line_med1_9.setText(item.getItem()[0][1])
+            self.line_qtd1_9.setText(str(saida[8][3]))
+            self.checkBox_9.setChecked(True)
+
+    	if len(saida)>9:
+            self.saida_id.append(saida[9][0])
+            item.recuperaItemBDitemID(saida[9][9])
+            self.line_med1_10.setText(item.getItem()[0][1])
+            self.line_qtd1_10.setText(str(saida[9][3]))
+            self.checkBox_10.setChecked(True)
+
+    	if len(saida)>10:
+            self.saida_id.append(saida[10][0])
+            item.recuperaItemBDitemID(saida[10][9])
+            self.line_med1_11.setText(item.getItem()[0][1])
+            self.line_qtd1_11.setText(str(saida[10][3]))
+            self.checkBox_11.setChecked(True)
+
+    	if len(saida)>11:
+            self.saida_id.append(saida[11][0])
+            item.recuperaItemBDitemID(saida[11][9])
+            self.line_med1_12.setText(item.getItem()[0][1])
+            self.line_qtd1_12.setText(str(saida[11][3]))
+            self.checkBox_12.setChecked(True)
+
+    	if len(saida)>12:
+            self.saida_id.append(saida[12][0])
+            item.recuperaItemBDitemID(saida[12][9])
+            self.line_med1_13.setText(item.getItem()[0][1])
+            self.line_qtd1_13.setText(str(saida[12][3]))
+            self.checkBox_13.setChecked(True)
+
+    	if len(saida)>13:
+            self.saida_id.append(saida[13][0])
+            item.recuperaItemBDitemID(saida[13][9])
+            self.line_med1_14.setText(item.getItem()[0][1])
+            self.line_qtd1_14.setText(str(saida[13][3]))
+            self.checkBox_14.setChecked(True)
+
+    	if len(saida)>14:
+            self.saida_id.append(saida[14][0])
+            item.recuperaItemBDitemID(saida[14][9])
+            self.line_med1_15.setText(item.getItem()[0][1])
+            self.line_qtd1_15.setText(str(saida[14][3]))
+            self.checkBox_15.setChecked(True)
+
+    def retirarPrescrito(self):
+        self.nomeMedDuplicado = -1
+        self.nomeMedInvalido = -1
+        self.loteInvalido = -1
+        self.medicamentoVencido = -1
+        self.erroQuantidade = -1
+        self.erroQtdPrescrita = -1
+        self.label_Erro.clear()
+        self.vetMed = []
+        paciente = Paciente()
+        usuario = Usuario()
+        saida = Saida()
+        item = Item()
+        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            self.lerSeqCampos()
+            for indice in range(len(self.vetMed)):
+                if self.vetMed[indice][2] != '':
+                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                            item.recuperaBDitem(self.vetMed[indice][2])
+                            if item.getDataVenc()[0][0] > date.today():
+                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                                if decremento >= 0:
+                                	if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
+                                		for posicao in range(len(self.vetMed)):
+                                			if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                                				self.nomeMedDuplicado = indice
+                                	else:
+                                		self.erroQtdPrescrita = indice
+                                else:
+                                    self.erroQuantidade = indice
+                            else:
+                                self.medicamentoVencido = indice
+                        else:
+                            self.loteInvalido = indice
+                    else:
+                        self.nomeMedInvalido = indice
+            if self.nomeMedInvalido != -1:
+                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
+            elif self.loteInvalido != -1:
+                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
+            elif self.medicamentoVencido != -1:
+                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+            elif self.nomeMedDuplicado != -1:
+                self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
+            elif self.erroQuantidade != -1:
+                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+            elif self.erroQtdPrescrita != -1:
+                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
+            else:#
+            	for i in range((len(self.vetMed))):
+                    saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
+                    if self.vetMed[i][2]:
+                        saida.setQtdSaida(self.vetMed[i][1])
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                        item.setLote(self.vetMed[i][2])
+                        item.updateQtdItem(decremento)
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    else:
+                        saida.setQtdSaida(0)
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+
+                    if saida.qtdRestante>0:
+                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=2
+                    else:
+                        if saida.qtdRestante==0:
+                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                            Mensagem.cor="black"
+                            Mensagem.img=1
+                            self.line_cpfPac.clear()
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+                    self.line_sobrenomePac.clear()
+                    self.line_nomePac.clear()
+
+
+        else:
+            self.label_Erro.setText("Paciente não está cadastrado!")
+
+    def retirarRestante(self):
+        self.nomeMedInvalido = -1
+        self.loteInvalido = -1
+        self.medicamentoVencido = -1
+        self.erroQuantidade = -1
+        self.erroQtdPrescrita = -1
+        self.label_Erro.clear()
+        self.vetMed = []
+        paciente = Paciente()
+        usuario = Usuario()
+        saida = Saida()
+        item = Item()
+        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            self.lerSeqCampos()
+            for indice in range(len(self.vetMed)):
+                if self.vetMed[indice][2] != '':
+                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                            item.recuperaBDitem(self.vetMed[indice][2])
+                            if item.getDataVenc()[0][0] > date.today():
+                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                                if decremento >= 0:
+                                	if int(self.vetMed[indice][1]) <= self.saida.getSaida()[indice][3]:
+                                		print('OK')
+                                	else:
+                                		self.erroQtdPrescrita = indice
+                                else:
+                                    self.erroQuantidade = indice
+                            else:
+                                self.medicamentoVencido = indice
+                        else:
+                            self.loteInvalido = indice
+                    else:
+                        self.nomeMedInvalido = indice
+            if self.nomeMedInvalido != -1:
+                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0].upper())
+            elif self.loteInvalido != -1:
+                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
+            elif self.medicamentoVencido != -1:
+                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+            elif self.erroQuantidade != -1:
+                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+            elif self.erroQtdPrescrita != -1:
+                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
+            else:
+            	for i in range((len(self.vetMed))):
+                    saida.setQtdPrescrita(self.saida.getSaida()[i][1])
+                    print(self.vetMed[i][1])
+                    if self.vetMed[i][2]:
+                        saida.setQtdSaida(self.vetMed[i][1])
+                        saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
+                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.saida.getSaida()[i][8])
+                        item.setLote(self.vetMed[i][2])
+                        item.updateQtdItem(decremento)
+                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    else:
+                        saida.setQtdSaida(0)
+                        saida.setQtdRestante(self.vetMed[i][1])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.saida.getSaida()[i][8])
+                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+
+                    if int(saida.qtdRestante) > 0:
+                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=2
+                    else:
+                        if int(saida.qtdRestante)==0:
+                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                            Mensagem.cor="black"
+                            Mensagem.img=1
+                            self.line_cpfPac.clear()
+
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+                    self.line_sobrenomePac.clear()
+                    self.line_nomePac.clear()
+
+        else:
+            self.label_Erro.setText("Paciente não está cadastrado!")
+
+    def buscarPrescricao(self):
+    	paciente = Paciente()
+    	self.saida = Saida()
+    	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            paciente.recuperaBDpaciente(self.line_cpfPac.text())
+            self.line_nomePac.setText(paciente.getPaciente()[0][1])
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
+            if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
+            	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
+            	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
+            		self.pushButton_Retirar.setVisible(False)
+            		self.pushButton_RetirarRestante.setVisible(True)
+            		self.preencheSaidaRestante(self.saida.getSaida())
+            	else:
+            		self.label_Erro.setText("Todas as baixas desta paciente já foram realizadas hoje!")
+            		self.limparCampos()
+            else:
+            	self.pushButton_Retirar.setVisible(True)
+            	self.pushButton_RetirarRestante.setVisible(False)
+            	self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+            	self.prescricao.recuperaBDprescricao()
+            	self.preencheCampos(self.prescricao.getPrescricao())
+    	else:
+    		if self.line_cpfPac.text() != '':
+    			self.label_Erro.setText("Paciente não cadastrado")
+
+        
+#=======================================================================================================
+#=======================================================================================================
+class TelaPrescricao(QtWidgets.QWidget):
+    cont = 0
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.prescricao = Prescricao()
+        self.setupUi(self)
+
+
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setFixedSize(582, 449)
+        Form.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
@@ -1053,169 +2586,914 @@ class Ui_BaixaProduto(object):
         self.fontLabel.setBold(True)
         self.fontLabel.setWeight(75)
 
-        self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
-        self.fontCampos.setPointSize(9)
-        self.fontCampos.setWeight(75)
+        fontQtd = QtGui.QFont()
+        fontQtd.setFamily("Times New Roman")
+
+        fontMed = QtGui.QFont()
+        fontMed.setFamily("Perpetua Titling MT")
 
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
-        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(435, 170, 111, 28))
+        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(460, 100, 91, 28))
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
-        self.label_qtd = QtWidgets.QLabel(Form)
-        self.label_qtd.setGeometry(QtCore.QRect(30, 100, 71, 16))
-        self.label_qtd.setObjectName("label_qtd")
+        self.label_Paciente = QtWidgets.QLabel(Form)
+        self.label_Paciente.setGeometry(QtCore.QRect(16, 35, 55, 16))
+        self.label_Paciente.setObjectName("label_Paciente")
 
-        self.lineEdit_Qtd = QtWidgets.QLineEdit(Form)
-        self.lineEdit_Qtd.setGeometry(QtCore.QRect(115, 102, 113, 25))
-        self.lineEdit_Qtd.setObjectName("Campo  Quantidade")
-        self.lineEdit_Qtd.setFont(self.fontCampos)
-        self.lineEdit_Qtd.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_Qtd))
+        self.pushButton_Salvar = QtWidgets.QPushButton(Form)
+        self.pushButton_Salvar.setGeometry(QtCore.QRect(460, 180, 93, 28))
+        self.pushButton_Salvar.setObjectName("pushButton_Salvar")
 
-        self.campoTexto = QtWidgets.QTextEdit(Form)
-        self.campoTexto.setGeometry(QtCore.QRect(25, 170, 400, 245))
-        self.campoTexto.setObjectName("Campo Informações do Item")
-        self.campoTexto.setToolTip("Informações do Item")
-        self.campoTexto.setReadOnly(True)
-        self.campoTexto.setFont(self.fontCampos)
+        self.pushButton_Buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
+        self.pushButton_Buscar.setObjectName("pushButton_Buscar")
 
-        self.label_Item = QtWidgets.QLabel(Form)
-        self.label_Item.setGeometry(QtCore.QRect(63, 70, 41, 20))
-        self.label_Item.setObjectName("label_Item")
-
-        self.lineEdit_Nome = QtWidgets.QLineEdit(Form)
-        self.lineEdit_Nome.setGeometry(QtCore.QRect(115, 70, 310, 25))
-        self.lineEdit_Nome.setObjectName("Campo Nome ou lote")
-        self.lineEdit_Nome.setToolTip("Digite o nome ou lote do item à ser retirado")
-        self.lineEdit_Nome.setFont(self.fontCampos)
-        self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9]+"), self.lineEdit_Nome))
+        self.pushButton_Limpar = QtWidgets.QPushButton(Form)
+        self.pushButton_Limpar.setGeometry(QtCore.QRect(460, 142, 93, 28))
+        self.pushButton_Limpar.setObjectName("pushButton_Limpar")
 
         self.label_Erro = QtWidgets.QLabel(Form)
-        self.label_Erro.setGeometry(QtCore.QRect(30, 130, 341, 20))
+        self.label_Erro.setFont(self.fontLabel)
+        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
         self.label_Erro.setObjectName("label_Erro")
+        self.label_Erro.setStyleSheet('QLabel {color: red}')
 
-        self.pushButton_limpar = QtWidgets.QPushButton(Form)
-        self.pushButton_limpar.setGeometry(QtCore.QRect(435, 208, 111, 28))
-        self.pushButton_limpar.setObjectName("pushButton_limpar")
+        self.label_nomePac = QtWidgets.QLabel(Form)
+        self.label_nomePac.setFont(self.fontLabel)
+        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
+        self.label_nomePac.setObjectName("label_nomePac")
+        self.label_nomePac.setText("Paciente:")
 
+        self.line_nomePac = QtWidgets.QLineEdit(Form)
+        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
+        self.line_nomePac.setObjectName("line_nomePac")
+        self.line_nomePac.setReadOnly(True)
+        self.line_nomePac.setMaxLength(15)
 
-        self.pushButton_retirar = QtWidgets.QPushButton(Form)
-        self.pushButton_retirar.setGeometry(QtCore.QRect(435, 70, 111, 28))
-        self.pushButton_retirar.setObjectName("pushButton_retirar")
+        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
+        self.line_sobrenomePac.setReadOnly(True)
+        self.line_sobrenomePac.setMaxLength(40)
 
-        self.radioButton_3 = QtWidgets.QRadioButton(Form)
-        self.radioButton_3.setGeometry(QtCore.QRect(400, 220, 161, 20))
-        self.radioButton_3.setObjectName("radioButton_3")
-        self.radioButton_3.setVisible(False)
+        self.scrollArea = QtWidgets.QScrollArea(Form)
+        self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        
+        self.scrollAreaWidgetContents = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 332, 402))
+        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
 
-        self.radioButton_4 = QtWidgets.QRadioButton(Form)
-        self.radioButton_4.setGeometry(QtCore.QRect(400, 260, 161, 20))
-        self.radioButton_4.setObjectName("radioButton_4")
-        self.radioButton_4.setVisible(False)
+        self.gridLayout = QtWidgets.QGridLayout(self.scrollAreaWidgetContents)
+        self.gridLayout.setObjectName("gridLayout")
+
+        self.checkBox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox.setObjectName("checkBox")
+        self.gridLayout.addWidget(self.checkBox, 0, 2, 1, 1)
+        
+        self.checkBox_3 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_3.setObjectName("checkBox_3")
+        self.gridLayout.addWidget(self.checkBox_3, 2, 2, 1, 1)
+
+        self.checkBox_2 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_2.setObjectName("checkBox_2")
+        self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
+
+        self.line_cpfPac = QtWidgets.QLineEdit(Form)
+        self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
+        self.line_cpfPac.setObjectName("line_cpfPac")
+        self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
+        self.line_cpfPac.setMaxLength(11)
+
+        self.line_med1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1.setFont(fontMed)
+        self.line_med1.setMaxLength(30)
+        self.line_med1.setObjectName("line_med1")
+        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1))
+        self.gridLayout.addWidget(self.line_med1, 0, 0, 1, 1)
+
+        self.line_med1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_2.setFont(fontMed)
+        self.line_med1_2.setMaxLength(30)
+        self.line_med1_2.setObjectName("line_med1_2")
+        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_2))
+        self.gridLayout.addWidget(self.line_med1_2, 1, 0, 1, 1)
+
+        self.line_med1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_3.setFont(fontMed)
+        self.line_med1_3.setMaxLength(30)
+        self.line_med1_3.setObjectName("line_med1_3")
+        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_3))
+        self.gridLayout.addWidget(self.line_med1_3, 2, 0, 1, 1)
+
+        self.line_med1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_4.setFont(fontMed)
+        self.line_med1_4.setMaxLength(30)
+        self.line_med1_4.setObjectName("line_med1_4")
+        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_4))
+        self.gridLayout.addWidget(self.line_med1_4, 3, 0, 1, 1)
+
+        self.line_med1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_5.setFont(fontMed)
+        self.line_med1_5.setMaxLength(30)
+        self.line_med1_5.setObjectName("line_med1_5")
+        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_5))
+        self.gridLayout.addWidget(self.line_med1_5, 4, 0, 1, 1)
+
+        self.line_med1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_6.setFont(fontMed)
+        self.line_med1_6.setMaxLength(30)
+        self.line_med1_6.setObjectName("line_med1_6")
+        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_6))
+        self.gridLayout.addWidget(self.line_med1_6, 5, 0, 1, 1)
+
+        self.line_med1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_7.setFont(fontMed)
+        self.line_med1_7.setMaxLength(30)
+        self.line_med1_7.setObjectName("line_med1_7")
+        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_7))
+        self.gridLayout.addWidget(self.line_med1_7, 6, 0, 1, 1)
+
+        self.line_med1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_8.setFont(fontMed)
+        self.line_med1_8.setMaxLength(30)
+        self.line_med1_8.setObjectName("line_med1_8")
+        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_8))
+        self.gridLayout.addWidget(self.line_med1_8, 7, 0, 1, 1)
+
+        self.line_med1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_9.setFont(fontMed)
+        self.line_med1_9.setMaxLength(30)
+        self.line_med1_9.setObjectName("line_med1_9")
+        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_9))
+        self.gridLayout.addWidget(self.line_med1_9, 8, 0, 1, 1)
+
+        self.line_med1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_10.setFont(fontMed)
+        self.line_med1_10.setMaxLength(30)
+        self.line_med1_10.setObjectName("line_med1_10")
+        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_10))
+        self.gridLayout.addWidget(self.line_med1_10, 9, 0, 1, 1)
+
+        self.line_med1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_11.setEnabled(True)
+        self.line_med1_11.setFont(fontMed)
+        self.line_med1_11.setMaxLength(30)
+        self.line_med1_11.setObjectName("line_med1_11")
+        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_11))
+        self.gridLayout.addWidget(self.line_med1_11, 10, 0, 1, 1)
+
+        self.line_med1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_12.setEnabled(True)
+        self.line_med1_12.setFont(fontMed)
+        self.line_med1_12.setMaxLength(30)
+        self.line_med1_12.setObjectName("line_med1_12")
+        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_12))
+        self.gridLayout.addWidget(self.line_med1_12, 11, 0, 1, 1)
+
+        self.line_med1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_13.setEnabled(True)
+        self.line_med1_13.setFont(fontMed)
+        self.line_med1_13.setMaxLength(30)
+        self.line_med1_13.setObjectName("line_med1_13")
+        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_13))
+        self.gridLayout.addWidget(self.line_med1_13, 12, 0, 1, 1)
+
+        self.line_med1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_14.setEnabled(True)
+        self.line_med1_14.setFont(fontMed)
+        self.line_med1_14.setMaxLength(30)
+        self.line_med1_14.setObjectName("line_med1_14")
+        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_14))
+        self.gridLayout.addWidget(self.line_med1_14, 13, 0, 1, 1)
+
+        self.line_med1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_med1_15.setFont(fontMed)
+        self.line_med1_15.setEnabled(True)
+        self.line_med1_15.setMaxLength(30)
+        self.line_med1_15.setObjectName("line_med1_15")
+        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_15))
+        self.gridLayout.addWidget(self.line_med1_15, 14, 0, 1, 1)
+
+        self.line_qtd1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1.setFont(fontQtd)
+        self.line_qtd1.setMaxLength(2)
+        self.line_qtd1.setObjectName("line_qtd1")
+        self.line_qtd1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1))
+        self.gridLayout.addWidget(self.line_qtd1, 0, 1, 1, 1)
+
+        self.line_qtd1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_2.setFont(fontQtd)
+        self.line_qtd1_2.setMaxLength(2)
+        self.line_qtd1_2.setObjectName("line_qtd1_2")
+        self.line_qtd1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_2))
+        self.gridLayout.addWidget(self.line_qtd1_2, 1, 1, 1, 1)
+
+        self.line_qtd1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_3.setFont(fontQtd)
+        self.line_qtd1_3.setMaxLength(2)
+        self.line_qtd1_3.setObjectName("line_qtd1_3")
+        self.line_qtd1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_3))
+        self.gridLayout.addWidget(self.line_qtd1_3, 2, 1, 1, 1)
+
+        self.line_qtd1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_4.setFont(fontQtd)
+        self.line_qtd1_4.setMaxLength(2)
+        self.line_qtd1_4.setObjectName("line_qtd1_4")
+        self.line_qtd1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_4))
+        self.gridLayout.addWidget(self.line_qtd1_4, 3, 1, 1, 1)
+
+        self.line_qtd1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_5.setFont(fontQtd)
+        self.line_qtd1_5.setMaxLength(2)
+        self.line_qtd1_5.setObjectName("line_qtd1_5")
+        self.line_qtd1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_5))
+        self.gridLayout.addWidget(self.line_qtd1_5, 4, 1, 1, 1)
+
+        self.line_qtd1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_6.setFont(fontQtd)
+        self.line_qtd1_6.setMaxLength(2)
+        self.line_qtd1_6.setObjectName("line_qtd1_6")
+        self.line_qtd1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_6))
+        self.gridLayout.addWidget(self.line_qtd1_6, 5, 1, 1, 1)
+
+        self.line_qtd1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_7.setFont(fontQtd)
+        self.line_qtd1_7.setMaxLength(2)
+        self.line_qtd1_7.setObjectName("line_qtd1_7")
+        self.line_qtd1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_7))
+        self.gridLayout.addWidget(self.line_qtd1_7, 6, 1, 1, 1)
+
+        self.line_qtd1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_8.setFont(fontQtd)
+        self.line_qtd1_8.setMaxLength(2)
+        self.line_qtd1_8.setObjectName("line_qtd1_8")
+        self.line_qtd1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_8))
+        self.gridLayout.addWidget(self.line_qtd1_8, 7, 1, 1, 1)
+
+        self.line_qtd1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_9.setFont(fontQtd)
+        self.line_qtd1_9.setMaxLength(2)
+        self.line_qtd1_9.setObjectName("line_qtd1_9")
+        self.line_qtd1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_9))
+        self.gridLayout.addWidget(self.line_qtd1_9, 8, 1, 1, 1)
+
+        self.line_qtd1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_10.setFont(fontQtd)
+        self.line_qtd1_10.setMaxLength(2)
+        self.line_qtd1_10.setObjectName("line_qtd1_10")
+        self.line_qtd1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_10))
+        self.gridLayout.addWidget(self.line_qtd1_10, 9, 1, 1, 1)
+
+        self.line_qtd1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_11.setEnabled(True)
+        self.line_qtd1_11.setFont(fontQtd)
+        self.line_qtd1_11.setMaxLength(2)
+        self.line_qtd1_11.setObjectName("line_qtd1_11")
+        self.line_qtd1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_11))
+        self.gridLayout.addWidget(self.line_qtd1_11, 10, 1, 1, 1)
+
+        self.line_qtd1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_12.setEnabled(True)
+        self.line_qtd1_12.setFont(fontQtd)
+        self.line_qtd1_12.setMaxLength(2)
+        self.line_qtd1_12.setObjectName("line_qtd1_12")
+        self.line_qtd1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_12))
+        self.gridLayout.addWidget(self.line_qtd1_12, 11, 1, 1, 1)
+
+        self.line_qtd1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_13.setEnabled(True)
+        self.line_qtd1_13.setFont(fontQtd)
+        self.line_qtd1_13.setMaxLength(2)
+        self.line_qtd1_13.setObjectName("line_qtd1_13")
+        self.line_qtd1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_13))
+        self.gridLayout.addWidget(self.line_qtd1_13, 12, 1, 1, 1)
+
+        self.line_qtd1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_14.setEnabled(True)
+        self.line_qtd1_14.setFont(fontQtd)
+        self.line_qtd1_14.setMaxLength(2)
+        self.line_qtd1_14.setObjectName("line_qtd1_14")
+        self.line_qtd1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_14))
+        self.gridLayout.addWidget(self.line_qtd1_14, 13, 1, 1, 1)
+
+        self.line_qtd1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
+        self.line_qtd1_15.setEnabled(True)
+        self.line_qtd1_15.setFont(fontQtd)
+        self.line_qtd1_15.setMaxLength(2)
+        self.line_qtd1_15.setObjectName("line_qtd1_15")
+        self.line_qtd1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_qtd1_15))
+        self.gridLayout.addWidget(self.line_qtd1_15, 14, 1, 1, 1)
+
+        self.checkBox_12 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_12.setEnabled(True)
+        self.checkBox_12.setText("")
+        self.checkBox_12.setObjectName("checkBox_12")
+        self.gridLayout.addWidget(self.checkBox_12, 11, 2, 1, 1)
+        self.checkBox_6 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_6.setText("")
+        self.checkBox_6.setObjectName("checkBox_6")
+        self.gridLayout.addWidget(self.checkBox_6, 5, 2, 1, 1)
+        self.checkBox_10 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_10.setText("")
+        self.checkBox_10.setObjectName("checkBox_10")
+        self.gridLayout.addWidget(self.checkBox_10, 9, 2, 1, 1)
+        self.checkBox_13 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_13.setEnabled(True)
+        self.checkBox_13.setText("")
+        self.checkBox_13.setObjectName("checkBox_13")
+        self.gridLayout.addWidget(self.checkBox_13, 12, 2, 1, 1)
+        self.checkBox_15 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_15.setEnabled(True)
+        self.checkBox_15.setText("")
+        self.checkBox_15.setObjectName("checkBox_15")
+        self.gridLayout.addWidget(self.checkBox_15, 14, 2, 1, 1)
+        self.checkBox_4 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_4.setText("")
+        self.checkBox_4.setObjectName("checkBox_4")
+        self.gridLayout.addWidget(self.checkBox_4, 3, 2, 1, 1)
+        self.checkBox_5 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_5.setText("")
+        self.checkBox_5.setObjectName("checkBox_5")
+        self.gridLayout.addWidget(self.checkBox_5, 4, 2, 1, 1)
+        self.checkBox_7 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_7.setText("")
+        self.checkBox_7.setObjectName("checkBox_7")
+        self.gridLayout.addWidget(self.checkBox_7, 6, 2, 1, 1)
+        self.checkBox_11 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_11.setEnabled(True)
+        self.checkBox_11.setText("")
+        self.checkBox_11.setObjectName("checkBox_11")
+        self.gridLayout.addWidget(self.checkBox_11, 10, 2, 1, 1)
+        self.checkBox_8 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_8.setText("")
+        self.checkBox_8.setObjectName("checkBox_8")
+        self.gridLayout.addWidget(self.checkBox_8, 7, 2, 1, 1)
+        self.checkBox_14 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_14.setEnabled(True)
+        self.checkBox_14.setText("")
+        self.checkBox_14.setObjectName("checkBox_14")
+        self.gridLayout.addWidget(self.checkBox_14, 13, 2, 1, 1)
+        self.checkBox_9 = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.checkBox_9.setText("")
+        self.checkBox_9.setObjectName("checkBox_9")
+        self.gridLayout.addWidget(self.checkBox_9, 8, 2, 1, 1)
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.pushButton = QtWidgets.QPushButton(Form)
+        self.pushButton.setGeometry(QtCore.QRect(380, 100, 21, 23))
+        self.pushButton.setObjectName("+")
+        self.pushButton.clicked.connect(self.maisCampos)
+        self.label_Medicamento = QtWidgets.QLabel(Form)
+        self.label_Medicamento.setGeometry(QtCore.QRect(30, 80, 129, 13))
+        self.label_Medicamento.setObjectName("label_Medicamento")
+        self.label_Quantidade = QtWidgets.QLabel(Form)
+        self.label_Quantidade.setGeometry(QtCore.QRect(225, 80, 55, 16))
+        self.label_Quantidade.setObjectName("label_Quantidade")
+        self.label_FazUso = QtWidgets.QLabel(Form)
+        self.label_FazUso.setGeometry(QtCore.QRect(335, 80, 46, 13))
+        self.label_FazUso.setObjectName("label_FazUso")
+
+        self.line_med1_11.setVisible(False)
+        self.line_med1_12.setVisible(False)
+        self.line_med1_13.setVisible(False)
+        self.line_med1_14.setVisible(False)
+        self.line_med1_15.setVisible(False)
+
+        self.line_qtd1_11.setVisible(False)
+        self.line_qtd1_12.setVisible(False)
+        self.line_qtd1_13.setVisible(False)
+        self.line_qtd1_14.setVisible(False)
+        self.line_qtd1_15.setVisible(False)
+
+        self.checkBox_11.setVisible(False)
+        self.checkBox_12.setVisible(False)
+        self.checkBox_13.setVisible(False)
+        self.checkBox_14.setVisible(False)
+        self.checkBox_15.setVisible(False)
+
+        self.line_med1.setPlaceholderText("Med 1")
+        self.line_med1_2.setPlaceholderText("Med 2")
+        self.line_med1_3.setPlaceholderText("Med 3")
+        self.line_med1_4.setPlaceholderText("Med 4")
+        self.line_med1_5.setPlaceholderText("Med 5")
+        self.line_med1_6.setPlaceholderText("Med 6")
+        self.line_med1_7.setPlaceholderText("Med 7")
+        self.line_med1_8.setPlaceholderText("Med 8")
+        self.line_med1_9.setPlaceholderText("Med 9")
+        self.line_med1_10.setPlaceholderText("Med 10")
+        self.line_med1_11.setPlaceholderText("Med 11")
+        self.line_med1_12.setPlaceholderText("Med 12")
+        self.line_med1_13.setPlaceholderText("Med 13")
+        self.line_med1_14.setPlaceholderText("Med 14")
+        self.line_med1_15.setPlaceholderText("Med 15")
+
 
         self.retranslateUi(Form)
+
+        self.pushButton_Salvar.clicked.connect(self.copiarCampos)
+        self.pushButton_Salvar.clicked.connect(self.salvarPrescricao)
+        self.pushButton_Limpar.clicked.connect(self.limparCampos)
+        self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
+        self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
+        self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
+        self.pushButton_Salvar.clicked.connect(self.mensagem)
+
         QtCore.QMetaObject.connectSlotsByName(Form)
+        Form.setTabOrder(self.line_cpfPac, self.line_med1)
+        Form.setTabOrder(self.line_med1, self.line_qtd1)
+        Form.setTabOrder(self.line_qtd1, self.checkBox)
+        Form.setTabOrder(self.checkBox, self.line_med1_2)
+        Form.setTabOrder(self.line_med1_2, self.line_qtd1_2)
+        Form.setTabOrder(self.line_qtd1_2, self.checkBox_2)
+        Form.setTabOrder(self.checkBox_2, self.line_med1_3)
+        Form.setTabOrder(self.line_med1_3, self.line_qtd1_3)
+        Form.setTabOrder(self.line_qtd1_3, self.checkBox_3)
+        Form.setTabOrder(self.checkBox_3, self.line_med1_4)
+        Form.setTabOrder(self.line_med1_4, self.line_qtd1_4)
+        Form.setTabOrder(self.line_qtd1_4, self.checkBox_4)
+        Form.setTabOrder(self.checkBox_4, self.line_med1_5)
+        Form.setTabOrder(self.line_med1_5, self.line_qtd1_5)
+        Form.setTabOrder(self.line_qtd1_5, self.checkBox_5)
+        Form.setTabOrder(self.checkBox_5, self.line_med1_6)
+        Form.setTabOrder(self.line_med1_6, self.line_qtd1_6)
+        Form.setTabOrder(self.line_qtd1_6, self.checkBox_6)
+        Form.setTabOrder(self.checkBox_6, self.line_med1_7)
+        Form.setTabOrder(self.line_med1_7, self.line_qtd1_7)
+        Form.setTabOrder(self.line_qtd1_7, self.checkBox_7)
+        Form.setTabOrder(self.checkBox_7, self.line_med1_8)
+        Form.setTabOrder(self.line_med1_8, self.line_qtd1_8)
+        Form.setTabOrder(self.line_qtd1_8, self.checkBox_8)
+        Form.setTabOrder(self.checkBox_8, self.line_med1_9)
+        Form.setTabOrder(self.line_med1_9, self.line_qtd1_9)
+        Form.setTabOrder(self.line_qtd1_9, self.checkBox_9)
+        Form.setTabOrder(self.checkBox_9, self.line_med1_10)
+        Form.setTabOrder(self.line_med1_10, self.line_qtd1_10)
+        Form.setTabOrder(self.line_qtd1_10, self.checkBox_10)
+        Form.setTabOrder(self.checkBox_10, self.line_med1_11)
+        Form.setTabOrder(self.line_med1_11, self.line_qtd1_11)
+        Form.setTabOrder(self.line_qtd1_11, self.checkBox_11)
+        Form.setTabOrder(self.checkBox_11, self.line_med1_12)
+        Form.setTabOrder(self.line_med1_12, self.line_qtd1_12)
+        Form.setTabOrder(self.line_qtd1_12, self.checkBox_12)
+        Form.setTabOrder(self.checkBox_12, self.line_med1_13)
+        Form.setTabOrder(self.line_med1_13, self.line_qtd1_13)
+        Form.setTabOrder(self.line_qtd1_13, self.checkBox_13)
+        Form.setTabOrder(self.checkBox_13, self.line_med1_14)
+        Form.setTabOrder(self.line_med1_14, self.line_qtd1_14)
+        Form.setTabOrder(self.line_qtd1_14, self.checkBox_14)
+        Form.setTabOrder(self.checkBox_14, self.line_med1_15)
+        Form.setTabOrder(self.line_med1_15, self.line_qtd1_15)
+        Form.setTabOrder(self.line_qtd1_15, self.checkBox_15)
+        Form.setTabOrder(self.checkBox_15, self.pushButton_MenuPrin)
+        Form.setTabOrder(self.pushButton_MenuPrin, self.pushButton_Limpar)
+        Form.setTabOrder(self.pushButton_Limpar, self.pushButton_Salvar)
+        Form.setTabOrder(self.pushButton_Salvar, self.pushButton)
+        Form.setTabOrder(self.pushButton, self.scrollArea)
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Baixa Item"))
-        self.label_qtd.setText(_translate("Form", "Quantidade:"))
-        self.label_Item.setText(_translate("Form", "Item:"))
-        self.pushButton_limpar.setText(_translate("Form", "Limpar"))
-        self.pushButton_retirar.setText(_translate("Form", "Retirar"))
+        Form.setWindowTitle(_translate("Form", "Prescrição - Cadastro e edição"))
+        Form.setToolTip(_translate("Form", "Adicionar mais campos"))
+        self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
-        self.radioButton_3.setText(_translate("Form", "retirada para descarte"))
-        self.radioButton_4.setText(_translate("Form", "retirada para consumo"))
+        self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
+        self.label_Paciente.setText(_translate("Form", "Paciente: "))
+        self.line_cpfPac.setToolTip(_translate("Form", "Digite o cpf da paciente"))
+        self.pushButton_Salvar.setToolTip(_translate("Form", "Salva a prescrição do paciente"))
+        self.pushButton_Salvar.setText(_translate("Form", "Salvar"))
+        self.pushButton_Salvar.setShortcut(_translate("Form", "Ctrl+S"))
+        self.pushButton_Buscar.setToolTip(_translate("Form", "Busca a prescrição do paciente"))
+        self.pushButton_Buscar.setText(_translate("Form", "Buscar"))
+        self.pushButton_Buscar.setShortcut(_translate("Form", "Return"))
+        self.pushButton_Limpar.setToolTip(_translate("Form", "Limpa os campos digitados"))
+        self.pushButton_Limpar.setText(_translate("Form", "Limpar"))
+        self.pushButton_Limpar.setShortcut(_translate("Form", "Ctrl+Del"))
+        self.line_cpfPac.setPlaceholderText("Informe o cpf do paciente")
 
+        self.checkBox.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_2.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_3.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_4.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_5.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_6.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_7.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_8.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_9.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_10.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_11.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_12.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_13.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_14.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.checkBox_15.setToolTip(_translate("Form", "Medicamento de uso diário?"))
 
-class BaixaItem(QtWidgets.QWidget, Ui_BaixaProduto):
+        
+        self.checkBox.setToolTip(_translate("Form", "Medicamento de uso diário?"))
+        self.line_qtd1_3.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_8.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_2.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_3.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_4.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_4.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_2.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_5.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_6.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_6.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_5.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_7.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_7.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_11.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_12.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_13.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_9.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_10.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_14.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_med1_9.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_14.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_11.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_11.setWhatsThis(_translate("Form", "<html><head/><body><p>setVisible(False)</p></body></html>"))
+        self.line_qtd1_8.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_13.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_med1_15.setToolTip(_translate("Form", "Digite o nome do medicamento"))
+        self.line_qtd1_12.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_15.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.line_qtd1_10.setToolTip(_translate("Form", "Digite a quantidade diária do medicamento informado"))
+        self.pushButton.setToolTip(_translate("Form", "Adiciona mais campos"))
+        self.pushButton.setText(_translate("Form", "+"))
+        self.pushButton.setShortcut(_translate("Form", "Ctrl++"))
+        self.label_Medicamento.setText(_translate("Form", "Nome Medicamento:"))
+        self.label_Quantidade.setText(_translate("Form", "Qtd diária:"))
+        self.label_FazUso.setText(_translate("Form", "Faz Uso?"))
 
-    switch_window = QtCore.pyqtSignal()#MENU
-    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+    def menuPrincipal(self):
+    	self.switch_window.emit()
 
-    def __init__(self):
-        QtWidgets.QWidget.__init__(self)
-        self.setupUi(self)
-        self.pushButton_MenuPrin.clicked.connect(self.telaMenuPrincipal)
-        self.pushButton_retirar.clicked.connect(self.retirarItem)
-        self.pushButton_limpar.clicked.connect(self.limparCampos)
+    def mensagem(self):
+        self.switch_window_2.emit()
 
-    def retirarItem(self):
-        self.label_Erro.clear()
-        self.campoTexto.clear()
-        loteNome = self.lineEdit_Nome.text()
-        qtdDigitada = self.lineEdit_Qtd.text()
-        if self.radioButton_3.isChecked():
-            descarte = True
-        else:
-            descarte = False
-
-        item = Item()
-        if qtdDigitada and loteNome:
-            item.recuperaBDitem(loteNome)
-            if item.validaLoteNomeItem(loteNome):
-                menor = item.getDataVenc()[0][0]
-                indice = 0
-                qtdEstoque = 0
-                for linha in range(len(item.getDataVenc())):
-                    #TESTAR ALTERAÇÃO DA DATA NO IF ABAIXO
-                    if int(item.getQtdItem()[linha][0]) > 0:
-                        if item.getExcluido()[linha][0] == False:
-                            if item.getDataVenc()[linha][0] > date.today():
-                                qtdEstoque = qtdEstoque + int(item.getQtdItem()[linha][0])
-                                if item.getDataVenc()[linha][0] <= menor:
-                                    menor = item.getDataVenc()[linha][0]
-                                    indice = linha
-                print(qtdEstoque)
-
-                if item.getDataVenc()[indice][0] > date.today():
-                    nome = item.getNomeItem()[indice][0]
-                    item_id = item.getItemID()[indice][0]
-                    qtdItem = item.getQtdItem()[indice][0]
-                    qtdMin = item.getQtdMinima()[indice][0]
-                    lote = item.getLote()[indice][0]
-                    print(qtdItem)
-                    decremento = int(qtdItem) - int(qtdDigitada)
-                    qtdEstoque = qtdEstoque - int(qtdDigitada)
-                    if decremento < 0:
-                        decremento = 0
-                    self.campoTexto.setText("Dados do item retirado"+"\nNome: "+str(nome) +"\nSaldo: "+str(decremento)+"\nLote: "+str(lote) +"\n\nSaldo total de "+nome+" em estoque: "+str(qtdEstoque))
-
-                    if int(qtdDigitada) <= int(qtdEstoque) and decremento >= 0:
-                        item.setLote(lote)
-                        item.updateQtdItem(str(decremento))
-                        if decremento <= int(qtdMin):
-                            Mensagem.msg = "A quantidade mínima foi atingida\nreponha o estoque\nBAIXA CONCLUÍDA!"
-                            Mensagem.cor = "orange"
-                            self.switch_window_2.emit()
-                        else:
-                            Mensagem.msg = "BAIXA CONCLUÍDA!"
-                            Mensagem.cor = "blue"
-                            self.switch_window_2.emit()
-                    else:
-                        self.campoTexto.clear()
-                        self.label_Erro.setText("A quantidade de retirada é maior que a disponivel")
-                else:
-                    self.label_Erro.setText("ESTE MEDICAMENTO ESTÁ VENCIDO NO ESTOQUE!\nPRECISA SER DESCARTADO ANTES DA BAIXA!")
-            else:
-                self.label_Erro.setText("O Item não está cadastrado!")
-        else:
-            self.label_Erro.setText("")
-
-
-
-    def telaMenuPrincipal(self):
-        self.switch_window.emit()
-
-    def copiaCampos(self):
-        self.lineEdit_Qtd.copy()
-        self.lineEdit_Nome.copy()
+    def copiarCampos(self):
+        self.line_med1.copy()
+        self.line_med1_2.copy()
+        self.line_med1_3.copy()
+        self.line_med1_4.copy()
+        self.line_med1_5.copy()
+        self.line_med1_6.copy()
+        self.line_med1_7.copy()
+        self.line_med1_8.copy()
+        self.line_med1_9.copy()
+        self.line_med1_10.copy()
+        self.line_med1_11.copy()
+        self.line_med1_12.copy()
+        self.line_med1_13.copy()
+        self.line_med1_14.copy()
+        self.line_med1_15.copy()
+        self.line_qtd1.copy()
+        self.line_qtd1_2.copy()
+        self.line_qtd1_3.copy()
+        self.line_qtd1_4.copy()
+        self.line_qtd1_5.copy()
+        self.line_qtd1_6.copy()
+        self.line_qtd1_7.copy()
+        self.line_qtd1_8.copy()
+        self.line_qtd1_9.copy()
+        self.line_qtd1_10.copy()
+        self.line_qtd1_11.copy()
+        self.line_qtd1_12.copy()
+        self.line_qtd1_13.copy()
+        self.line_qtd1_14.copy()
+        self.line_qtd1_15.copy()
+        self.line_cpfPac.copy()
 
     def limparCampos(self):
-        self.lineEdit_Nome.clear()
-        self.lineEdit_Qtd.clear()
+        self.line_med1_15.clear()
+        self.line_med1_14.clear()
+        self.line_med1_13.clear()
+        self.line_med1_12.clear()
+        self.line_med1_11.clear()
+        self.line_med1_10.clear()
+        self.line_med1_9.clear()
+        self.line_med1_8.clear()
+        self.line_med1_7.clear()
+        self.line_med1_6.clear()
+        self.line_med1_5.clear()
+        self.line_med1_4.clear()
+        self.line_med1_3.clear()
+        self.line_qtd1_15.clear()
+        self.line_qtd1_14.clear()
+        self.line_qtd1_13.clear()
+        self.line_qtd1_12.clear()
+        self.line_qtd1_11.clear()
+        self.line_qtd1_10.clear()
+        self.line_qtd1_9.clear()
+        self.line_qtd1_8.clear()
+        self.line_qtd1_7.clear()
+        self.line_qtd1_6.clear()
+        self.line_qtd1_5.clear()
+        self.line_qtd1_4.clear()
+        self.line_qtd1_3.clear()
+        self.line_med1_2.clear()
+        self.line_med1.clear()
+        self.line_qtd1.clear()
+        self.line_qtd1_2.clear()
         self.label_Erro.clear()
-        self.campoTexto.clear()
+        self.checkBox.setChecked(False)
+        self.checkBox_2.setChecked(False)
+        self.checkBox_3.setChecked(False)
+        self.checkBox_4.setChecked(False)
+        self.checkBox_5.setChecked(False)
+        self.checkBox_6.setChecked(False)
+        self.checkBox_7.setChecked(False)
+        self.checkBox_8.setChecked(False)
+        self.checkBox_9.setChecked(False)
+        self.checkBox_10.setChecked(False)
+        self.checkBox_11.setChecked(False)
+        self.checkBox_12.setChecked(False)
+        self.checkBox_13.setChecked(False)
+        self.checkBox_14.setChecked(False)
+        self.checkBox_15.setChecked(False)
+
+
+    def maisCampos(self):
+        if self.cont == 0:
+            self.line_med1_11.setVisible(True)
+            self.line_qtd1_11.setVisible(True)
+            self.checkBox_11.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 1:
+            self.line_med1_12.setVisible(True)
+            self.line_qtd1_12.setVisible(True)
+            self.checkBox_12.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 2:
+            self.line_med1_13.setVisible(True)
+            self.line_qtd1_13.setVisible(True)
+            self.checkBox_13.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 3:
+            self.line_med1_14.setVisible(True)
+            self.line_qtd1_14.setVisible(True)
+            self.checkBox_14.setVisible(True)
+            self.cont = self.cont+1
+            return None
+        if self.cont == 4:
+            self.line_med1_15.setVisible(True)
+            self.line_qtd1_15.setVisible(True)
+            self.checkBox_15.setVisible(True)
+            self.cont = self.cont+1
+            return None
+
+    def lerSeqCampos(self):
+        if self.line_med1.text() != '':
+            if self.checkBox.isChecked():
+                vet = (self.line_med1.text(), self.line_qtd1.text(), 1)
+            else:
+                vet = (self.line_med1.text(), self.line_qtd1.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_2.text() != '': 
+            if self.checkBox_2.isChecked():
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), 1)
+            else:
+                vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_3.text() != '': 
+            if self.checkBox_3.isChecked():
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), 1)
+            else:
+                vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_4.text() != '': 
+            if self.checkBox_4.isChecked():
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), 1)
+            else:
+                vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_5.text() != '': 
+            if self.checkBox_5.isChecked():
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), 1)
+            else:
+                vet = (self.line_med1_5.text(), self.line_qtd1_5.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_6.text() != '': 
+            if self.checkBox_6.isChecked():
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), 1)
+            else:
+                vet = (self.line_med1_6.text(), self.line_qtd1_6.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_7.text() != '': 
+            if self.checkBox_7.isChecked():
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), 1)
+            else:
+                vet = (self.line_med1_7.text(), self.line_qtd1_7.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_8.text() != '': 
+            if self.checkBox_8.isChecked():
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), 1)
+            else:
+                vet = (self.line_med1_8.text(), self.line_qtd1_8.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_9.text() != '': 
+            if self.checkBox_9.isChecked():
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), 1)
+            else:
+                vet = (self.line_med1_9.text(), self.line_qtd1_9.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_10.text() != '': 
+            if self.checkBox_10.isChecked():
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), 1)
+            else:
+                vet = (self.line_med1_10.text(), self.line_qtd1_10.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_11.text() != '': 
+            if self.checkBox_11.isChecked():
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), 1)
+            else:
+                vet = (self.line_med1_11.text(), self.line_qtd1_11.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_12.text() != '': 
+            if self.checkBox_12.isChecked():
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), 1)
+            else:
+                vet = (self.line_med1_12.text(), self.line_qtd1_12.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_13.text() != '': 
+            if self.checkBox_13.isChecked():
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), 1)
+            else:
+                vet = (self.line_med1_13.text(), self.line_qtd1_13.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_14.text() != '': 
+            if self.checkBox_14.isChecked():
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), 1)
+            else:
+                vet = (self.line_med1_14.text(), self.line_qtd1_14.text(), 0)
+            self.vetMed.append(vet)
+        if self.line_med1_15.text() != '': 
+            if self.checkBox_15.isChecked():
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), 1)
+            else:
+                vet = (self.line_med1_15.text(), self.line_qtd1_15.text(), 0)
+            self.vetMed.append(vet)
+
+    def preencheCampos(self, prescricao):
+    	self.limparCampos()
+    	if len(prescricao)>0:
+            self.line_med1.setText(prescricao[0][1])
+            self.line_qtd1.setText(str(prescricao[0][2]))
+            if prescricao[0][3] == 1:
+                self.checkBox.setChecked(True)
+
+    	if len(prescricao)>1:
+    		self.line_med1_2.setText(prescricao[1][1])
+    		self.line_qtd1_2.setText(str(prescricao[1][2]))
+    		if prescricao[1][3] == 1:
+    			self.checkBox_2.setChecked(True)
+
+    	if len(prescricao)>2:
+    		self.line_med1_3.setText(prescricao[2][1])
+    		self.line_qtd1_3.setText(str(prescricao[2][2]))
+    		if prescricao[2][3] == 1:
+    			self.checkBox_3.setChecked(True)
+
+    	if len(prescricao)>3:
+    		self.line_med1_4.setText(prescricao[3][1])
+    		self.line_qtd1_4.setText(str(prescricao[3][2]))
+    		if prescricao[3][3] == 1:
+    			self.checkBox_4.setChecked(True)
+
+    	if len(prescricao)>4:
+    		self.line_med1_5.setText(prescricao[4][1])
+    		self.line_qtd1_5.setText(str(prescricao[4][2]))
+    		if prescricao[4][3] == 1:
+    			self.checkBox_5.setChecked(True)
+
+    	if len(prescricao)>5:
+    		self.line_med1_6.setText(prescricao[5][1])
+    		self.line_qtd1_6.setText(str(prescricao[5][2]))
+    		if prescricao[5][3] == 1:
+    			self.checkBox_6.setChecked(True)
+
+    	if len(prescricao)>6:
+    		self.line_med1_7.setText(prescricao[6][1])
+    		self.line_qtd1_7.setText(str(prescricao[6][2]))
+    		if prescricao[6][3] == 1:
+    			self.checkBox_7.setChecked(True)
+
+    	if len(prescricao)>7:
+    		self.line_med1_8.setText(prescricao[7][1])
+    		self.line_qtd1_8.setText(str(prescricao[7][2]))
+    		if prescricao[7][3] == 1:
+    			self.checkBox_8.setChecked(True)
+
+    	if len(prescricao)>8:
+    		self.line_med1_9.setText(prescricao[8][1])
+    		self.line_qtd1_9.setText(str(prescricao[8][2]))
+    		if prescricao[8][3] == 1:
+    			self.checkBox_9.setChecked(True)
+
+    	if len(prescricao)>9:
+    		self.line_med1_10.setText(prescricao[9][1])
+    		self.line_qtd1_10.setText(str(prescricao[9][2]))
+    		if prescricao[9][3] == 1:
+    			self.checkBox_10.setChecked(True)
+
+    	if len(prescricao)>10:
+    		self.line_med1_11.setText(prescricao[10][1])
+    		self.line_qtd1_11.setText(str(prescricao[10][2]))
+    		if prescricao[10][3] == 1:
+    			self.checkBox_11.setChecked(True)
+
+    	if len(prescricao)>11:
+    		self.line_med1_12.setText(prescricao[11][1])
+    		self.line_qtd1_12.setText(str(prescricao[11][2]))
+    		if prescricao[11][3] == 1:
+    			self.checkBox_12.setChecked(True)
+
+    	if len(prescricao)>12:
+    		self.line_med1_13.setText(prescricao[12][1])
+    		self.line_qtd1_13.setText(str(prescricao[12][2]))
+    		if prescricao[12][3] == 1:
+    			self.checkBox_13.setChecked(True)
+
+    	if len(prescricao)>13:
+    		self.line_med1_14.setText(prescricao[13][1])
+    		self.line_qtd1_14.setText(str(prescricao[13][2]))
+    		if prescricao[13][3] == 1:
+    			self.checkBox_14.setChecked(True)
+
+    	if len(prescricao)>14:
+    		self.line_med1_15.setText(prescricao[14][1])
+    		self.line_qtd1_15.setText(str(prescricao[14][2]))
+    		if prescricao[14][3] == 1:
+    			self.checkBox_15.setChecked(True)
+
+    def salvarPrescricao(self):
+    	self.label_Erro.clear()
+    	self.vetMed = []
+    	paciente = Paciente()
+    	usuario = Usuario()
+    	#prescricao = Prescricao()
+    	item = Item()
+    	if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            self.lerSeqCampos()
+            medicamentoInvalido = None
+            medicamentoDuplicado = None
+            for indice in range(len(self.vetMed)):
+                for posicao in range(len(self.vetMed)):
+                    if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                        medicamentoDuplicado = indice
+                if not item.validaLoteNomeItem(self.vetMed[indice][0]):
+                    medicamentoInvalido = indice
+            if not medicamentoInvalido and not medicamentoDuplicado:
+                paciente.recuperaBDpaciente(self.line_cpfPac.text())
+                self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+                self.prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                for indice in range(len(self.vetMed)):
+                    if indice < int(len(self.prescricao.getPrescricao())):
+                        if self.prescricao.verificaPrescricao(paciente.getPaciente()[0][0], self.prescricao.getPrescricao()[indice][1]):
+                            self.prescricao.setNomeAntigo(self.prescricao.getPrescricao()[indice][1])
+                            self.prescricao.setNomeItem(self.vetMed[indice][0])
+                            self.prescricao.setQtdAdm(self.vetMed[indice][1])
+                            self.prescricao.setFazUso(self.vetMed[indice][2])
+                            self.prescricao.atualizaPrescricao()
+                    else:
+                        self.prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        self.prescricao.setNomeItem(self.vetMed[indice][0])
+                        self.prescricao.setQtdAdm(self.vetMed[indice][1])
+                        self.prescricao.setFazUso(self.vetMed[indice][2])
+                        self.prescricao.gravaBDprescricao(paciente.getPaciente()[0][0])
+                Mensagem.msg="Prescricao salva com sucesso!"
+                Mensagem.cor="black"
+                Mensagem.img=1
+                self.line_cpfPac.clear()
+                self.limparCampos()
+            else:
+                if medicamentoInvalido:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
+                else:
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
+    	else:
+    		self.label_Erro.setText("Paciente não está cadastrado!")
+
+    def buscarPrescricao(self):
+        paciente = Paciente()
+        if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
+            paciente.recuperaBDpaciente(self.line_cpfPac.text())
+            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+            self.prescricao.recuperaBDprescricao()
+            self.preencheCampos(self.prescricao.getPrescricao())
+            print(paciente.getPaciente())
+            self.line_nomePac.setText(paciente.getPaciente()[0][1])
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
+
+        elif self.line_cpfPac.text() != '':
+            self.label_Erro.setText("Paciente não cadastrado")
+
+      
 
 #===========================================================================================================================
 class Ui_FormCadProdEMed(object):
@@ -1237,14 +3515,15 @@ class Ui_FormCadProdEMed(object):
         self.fontUnidade.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 381, 22))
         self.lineEdit.setObjectName("Nome")
-        self.lineEdit.setPlaceholderText("Ex. (VitaminaB4)")
+        self.lineEdit.setPlaceholderText("Digite o nome do medicamento")
         self.lineEdit.setToolTip("Utilizar o nome padrão de fábrica ou o modo mais conhecido")
         self.lineEdit.setMaxLength(30)
         self.lineEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.lineEdit))
@@ -1252,39 +3531,37 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_2 = QtWidgets.QLineEdit(Form)
         self.lineEdit_2.setGeometry(QtCore.QRect(160, 70, 131, 22))
         self.lineEdit_2.setObjectName("Quantidade")
-        self.lineEdit_2.setFont(self.fontCampos)
-        self.lineEdit_2.setToolTip("Quantidade que deseja armazenar")
+        self.lineEdit_2.setPlaceholderText("Digite a quantidade")
+        self.lineEdit_2.setToolTip("Quantidade que deseja armazenar,\n somente o numero")
         self.lineEdit_2.setValidator(QtGui.QIntValidator())
 
         self.lineEdit_4 = QtWidgets.QLineEdit(Form)
         self.lineEdit_4.setGeometry(QtCore.QRect(160, 100, 131, 22))
         self.lineEdit_4.setObjectName("QtdMinima")
-        self.lineEdit_4.setFont(self.fontCampos)
-        self.lineEdit_4.setToolTip("Quantidade com margem\nmínima em estoque")
+        self.lineEdit_4.setPlaceholderText("Digite qtd minima")
+        self.lineEdit_4.setToolTip("Quantidade mínima em estoque que deseja ser alertado(a)\n Somente numeros")
         self.lineEdit_4.setValidator(QtGui.QIntValidator())
 
         self.lineEdit_5 = QtWidgets.QLineEdit(Form)
         self.lineEdit_5.setGeometry(QtCore.QRect(160, 130, 131, 22))
         self.lineEdit_5.setObjectName("Lote")
-        self.lineEdit_5.setFont(self.fontCampos)
         self.lineEdit_5.setMaxLength(30)
-        self.lineEdit_5.setToolTip("Lote é a identificação única \ndo Item que será armazenado")
+        self.lineEdit_5.setPlaceholderText("Digite o lote")
+        self.lineEdit_5.setToolTip("Lote é a identificação única \ndo Item que será armazenado\n fornecida pelo fabricante")
         self.lineEdit_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_5))
 
         self.lineEdit_6 = QtWidgets.QLineEdit(Form)
         self.lineEdit_6.setGeometry(QtCore.QRect(160, 160, 131, 22))
         self.lineEdit_6.setObjectName("Nome Fornecedor")
-        self.lineEdit_6.setPlaceholderText("(Ex. souza cruz)")
-        self.lineEdit_6.setFont(self.fontCampos)
+        self.lineEdit_6.setPlaceholderText("Digite o fornecedor")
         self.lineEdit_6.setMaxLength(20)
-        self.lineEdit_6.setToolTip("Empresa que comercializa ou entidade\nque doa o Item que será armazenado")
+        self.lineEdit_6.setToolTip("Empresa que comercializou ou entidade\nque doou o Item que será armazenado")
         self.lineEdit_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.lineEdit_6))
 
         self.lineEdit_3 = QtWidgets.QLineEdit(Form)
         self.lineEdit_3.setGeometry(QtCore.QRect(410, 70, 131, 22))
         self.lineEdit_3.setObjectName("Fabricante")
-        self.lineEdit_3.setPlaceholderText("(Ex. ZMED)")
-        self.lineEdit_3.setFont(self.fontCampos)
+        self.lineEdit_3.setPlaceholderText("Digite o fabricante")
         self.lineEdit_3.setMaxLength(30)
         self.lineEdit_3.setToolTip("Empresa eu produz o Item, geralmente\nidentificado na embalagem")
         self.lineEdit_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z ]+"), self.lineEdit_3))
@@ -1292,59 +3569,59 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_7 = QtWidgets.QLineEdit(Form)
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
         self.lineEdit_7.setObjectName("Peso")
-        self.lineEdit_7.setPlaceholderText("(Ex. 155.55)")
-        self.lineEdit_7.setFont(self.fontCampos)
-        self.lineEdit_7.setToolTip("Gramagem específica do medicamento")
+        self.lineEdit_7.setPlaceholderText("Digite o peso")
+        self.lineEdit_7.setToolTip("Gramagem específica do medicamento (Ex: 155.55)")
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
 
         self.lineEdit_8 = QtWidgets.QLineEdit(Form)
         self.lineEdit_8.setGeometry(QtCore.QRect(410, 130, 131, 22))
         self.lineEdit_8.setObjectName("unidade")
-        self.lineEdit_8.setPlaceholderText("Ex. (mg, mg/ml, ml)")
-        self.lineEdit_8.setFont(self.fontUnidade)
+        self.lineEdit_8.setPlaceholderText("Digite a unidade")
         self.lineEdit_8.setMaxLength(30)
-        self.lineEdit_8.setToolTip("Unidade do peso especificado")
+        self.lineEdit_8.setToolTip("Unidade do peso especificado \nEx. (mg, mg/ml, ml)")
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
 
         self.labelErro = QtWidgets.QLabel(Form)
-        self.labelErro.setGeometry(QtCore.QRect(10, 260, 300, 25))
+        self.labelErro.setGeometry(QtCore.QRect(10, 260, 400, 25))
         self.labelErro.setFont(self.fontLabel)
         self.labelErro.setObjectName("Erro")
 
         self.label_2 = QtWidgets.QLabel(Form)
-        self.label_2.setGeometry(QtCore.QRect(120, 40, 55, 16))
+        self.label_2.setGeometry(QtCore.QRect(110, 40, 55, 16))
         self.label_2.setObjectName("Nome")
 
         self.label_4 = QtWidgets.QLabel(Form)
-        self.label_4.setGeometry(QtCore.QRect(90, 70, 101, 20))
+        self.label_4.setGeometry(QtCore.QRect(80, 70, 101, 20))
         self.label_4.setObjectName("Quantidade")
 
         self.label_5 = QtWidgets.QLabel(Form)
-        self.label_5.setGeometry(QtCore.QRect(125, 130, 40, 20))
+        self.label_5.setGeometry(QtCore.QRect(115, 130, 40, 20))
         self.label_5.setObjectName("Lote")
 
         self.label_6 = QtWidgets.QLabel(Form)
-        self.label_6.setGeometry(QtCore.QRect(310, 160, 101, 20))
+        self.label_6.setGeometry(QtCore.QRect(300, 160, 101, 20))
         self.label_6.setObjectName("Data de Validade")
+        self.label_6.setToolTip("Insira a data de Validade presente\n na cartela do medicamento")
+
 
         self.label_8 = QtWidgets.QLabel(Form)
-        self.label_8.setGeometry(QtCore.QRect(100, 100, 71, 20))
+        self.label_8.setGeometry(QtCore.QRect(90, 100, 71, 20))
         self.label_8.setObjectName("Qtd Minima")
 
         self.label_9 = QtWidgets.QLabel(Form)
-        self.label_9.setGeometry(QtCore.QRect(70, 160, 100, 20))
+        self.label_9.setGeometry(QtCore.QRect(40, 160, 105, 20))
         self.label_9.setObjectName("Nome Fornecedor")
 
         self.label_7 = QtWidgets.QLabel(Form)
-        self.label_7.setGeometry(QtCore.QRect(350, 70, 80, 20))
+        self.label_7.setGeometry(QtCore.QRect(340, 70, 80, 20))
         self.label_7.setObjectName("Fabricante")
 
         self.label_10 = QtWidgets.QLabel(Form)
-        self.label_10.setGeometry(QtCore.QRect(380, 100, 40, 20))
+        self.label_10.setGeometry(QtCore.QRect(370, 100, 40, 20))
         self.label_10.setObjectName("Peso")
 
         self.label_11 = QtWidgets.QLabel(Form)
-        self.label_11.setGeometry(QtCore.QRect(370, 130, 40, 20))
+        self.label_11.setGeometry(QtCore.QRect(360, 130, 40, 20))
         self.label_11.setObjectName("Unidade")
 
         self.label_12 = QtWidgets.QLabel(Form)
@@ -1369,7 +3646,7 @@ class Ui_FormCadProdEMed(object):
 
         self.dateEdit = QtWidgets.QDateEdit(Form)
         self.dateEdit.setGeometry(QtCore.QRect(410, 160, 131, 22))
-        self.dateEdit.setToolTip("Data para o vencimento do Item à ser armaznado")
+        self.dateEdit.setToolTip("Data para o vencimento do Item à ser armazenado")
         self.dateEdit.setFont(self.fontCampos)
         self.dateEdit.setObjectName("dateEdit_Data_nasc")
         self.dataDefault()
@@ -1382,7 +3659,7 @@ class Ui_FormCadProdEMed(object):
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def dataDefault(self):
-        data = date.fromisoformat("1990-03-20")
+        data = date.fromisoformat("2019-01-01")
         self.dateEdit.setDate(data)
 
     def copiarCampos(self):
@@ -1454,7 +3731,6 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
         if nomeItem and lote and dataVenc and qtdMinima and quantidade:
             if dataVenc > dataAtual:
                 if item.validaLoteNomeItem(lote):#Verifica se existe um produto com esse item_id cadastrado
-                    self.labelErro.setStyleSheet('QLabel {color: red}')
                     self.labelErro.setText("Item com este Lote já está cadastrado!")
                 else:
                     self.labelErro.clear()
@@ -1473,7 +3749,8 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
                     self.registraEntrada(lote)
                     self.limparCampos()
                     Mensagem.msg = "Item inserido com sucesso!"
-                    Mensagem.cor = "Blue"
+                    Mensagem.cor = "black"
+                    Mensagem.img = 1
                     self.switch_window_2.emit()
             else:
                 self.labelErro.setText("Data de validade menor que a atual!")
@@ -1507,20 +3784,32 @@ class CadastroPaciente(QtWidgets.QWidget):
         Form.setFixedSize(574, 314)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+
+        self.fontLabel = QtGui.QFont()
+        self.fontLabel.setFamily("Arial")
+        self.fontLabel.setPointSize(12)
+        self.fontLabel.setBold(True)
+        self.fontLabel.setWeight(75)
 
         self.lineEdit_nome = QtWidgets.QLineEdit(Form)
-        self.lineEdit_nome.setGeometry(QtCore.QRect(60, 50, 100, 22))
+        self.lineEdit_nome.setGeometry(QtCore.QRect(60, 50, 120, 22))
         self.lineEdit_nome.setObjectName("Campo Nome")
+        self.lineEdit_nome.setPlaceholderText("nome do paciente")
+        self.lineEdit_nome.setToolTip("informe o primeiro nome do paciente")
+
         self.lineEdit_nome.setMaxLength(15)
         self.lineEdit_nome.setFont(self.fontCampos)
         self.lineEdit_nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[A-Za-z ]+"), self.lineEdit_nome))
 
         self.lineEdit_sobrenome = QtWidgets.QLineEdit(Form)
-        self.lineEdit_sobrenome.setGeometry(QtCore.QRect(260, 50, 260, 22))
+        self.lineEdit_sobrenome.setGeometry(QtCore.QRect(270, 50, 260, 22))
         self.lineEdit_sobrenome.setObjectName("Campo Sobrenome")
+        self.lineEdit_sobrenome.setPlaceholderText("sobrenome do paciente")
+        self.lineEdit_sobrenome.setToolTip("informe o sobrenome do paciente")
         self.lineEdit_sobrenome.setMaxLength(40)
         self.lineEdit_sobrenome.setFont(self.fontCampos)
         self.lineEdit_sobrenome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[A-Za-z ]+"), self.lineEdit_sobrenome))
@@ -1528,6 +3817,8 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.lineEdit_RG = QtWidgets.QLineEdit(Form)
         self.lineEdit_RG.setGeometry(QtCore.QRect(330, 80, 191, 22))
         self.lineEdit_RG.setObjectName("Campo RG")
+        self.lineEdit_RG.setPlaceholderText("Somente os numeros")
+        self.lineEdit_RG.setToolTip("Informe somente os numeros do RG do paciente")
         self.lineEdit_RG.setMaxLength(9)
         self.lineEdit_RG.setFont(self.fontCampos)
         self.lineEdit_RG.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_RG))
@@ -1537,6 +3828,8 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.lineEdit_CPF.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.lineEdit_CPF.setText("")
         self.lineEdit_CPF.setObjectName("Campo CPF")
+        self.lineEdit_CPF.setPlaceholderText("Somente os numeros")
+        self.lineEdit_CPF.setToolTip("Informe somente os numeros do CPF do paciente")
         self.lineEdit_CPF.setMaxLength(11)
         self.lineEdit_CPF.setFont(self.fontCampos)
         self.lineEdit_CPF.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_CPF))
@@ -1545,12 +3838,13 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.dateEdit_Data_nasc.setGeometry(QtCore.QRect(160, 110, 110, 22))
         self.dateEdit_Data_nasc.setFont(self.fontCampos)
         self.dateEdit_Data_nasc.setObjectName("dateEdit_Data_nasc")
+        self.dateEdit_Data_nasc.setToolTip("Informe a data de nascimento do paciente")
 
         self.label_nome = QtWidgets.QLabel(Form)
         self.label_nome.setGeometry(QtCore.QRect(20, 50, 40, 16))
         self.label_nome.setObjectName("label_nome")
         self.label_sobrenome = QtWidgets.QLabel(Form)
-        self.label_sobrenome.setGeometry(QtCore.QRect(190, 50, 55, 16))
+        self.label_sobrenome.setGeometry(QtCore.QRect(185, 50, 75, 16))
         self.label_sobrenome.setObjectName("label_sobrenome")
         self.label_rg = QtWidgets.QLabel(Form)
         self.label_rg.setGeometry(QtCore.QRect(300, 80, 30, 16))
@@ -1561,9 +3855,14 @@ class CadastroPaciente(QtWidgets.QWidget):
         self.label_data_nasc = QtWidgets.QLabel(Form)
         self.label_data_nasc.setGeometry(QtCore.QRect(20, 110, 121, 16))
         self.label_data_nasc.setObjectName("label_data_nasc")
+
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setGeometry(QtCore.QRect(30, 160, 371, 131))
         self.label_Erro.setObjectName("Erro")
+        self.label_Erro.setFont(self.fontLabel)
+
+
+
         self.pushButton_Limpar = QtWidgets.QPushButton(Form)
         self.pushButton_Limpar.setGeometry(QtCore.QRect(430, 230, 91, 28))
         self.pushButton_Limpar.setObjectName("pushButton_limpar")
@@ -1633,7 +3932,8 @@ class CadastroPaciente(QtWidgets.QWidget):
                         paciente.setDataNasc(data_nasc)
                         paciente.gravaBDpaciente()
                         Mensagem.msg = "Paciente Cadastrado com sucesso!"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                         self.limpaCampos()
                 else:
@@ -1669,30 +3969,31 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setFont(self.fontLabel)
         self.label_3.setStyleSheet('QLabel {color: red}')
-        self.label_3.setGeometry(QtCore.QRect(30, 300, 371, 131))
+        self.label_3.setGeometry(QtCore.QRect(30, 95, 371, 131))
         self.label_3.setObjectName("Mensagem de erro")
 
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(460, 160, 91, 28))
+        self.pushButton.setGeometry(QtCore.QRect(460, 190, 91, 28))
         self.pushButton.setObjectName("Limpar")
 
         self.pushButton_3 = QtWidgets.QPushButton(Form)
-        self.pushButton_3.setGeometry(QtCore.QRect(460, 195, 91, 28))
+        self.pushButton_3.setGeometry(QtCore.QRect(460, 225, 91, 28))
         self.pushButton_3.setObjectName("Cadastrar")
 
         self.pushButton_5 = QtWidgets.QPushButton(Form)
-        self.pushButton_5.setGeometry(QtCore.QRect(460, 230, 91, 28))
+        self.pushButton_5.setGeometry(QtCore.QRect(460, 260, 91, 28))
         self.pushButton_5.setObjectName("Menu Principal")
 
         self.groupBox = QtWidgets.QGroupBox(Form)
-        self.groupBox.setGeometry(QtCore.QRect(20, 20, 531, 141))
+        self.groupBox.setGeometry(QtCore.QRect(20, 20, 531, 160))
         self.groupBox.setObjectName("Informações de acesso")
 
         self.label_4 = QtWidgets.QLabel(self.groupBox)
@@ -1702,7 +4003,8 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.lineEdit_1 = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_1.setGeometry(QtCore.QRect(150, 40, 191, 22))
         self.lineEdit_1.setObjectName("Usuario")
-        self.lineEdit_1.setToolTip("Nome de usuario no máximo 30 digitos")
+        self.lineEdit_1.setPlaceholderText("Informe um nome de usuario")
+        self.lineEdit_1.setToolTip("informe um nome de usuario no máximo 30 digitos")
         self.lineEdit_1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_1))
         self.lineEdit_1.setFont(self.fontCampos)
         self.lineEdit_1.setMaxLength(30)
@@ -1715,6 +4017,7 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.lineEdit_2.setGeometry(QtCore.QRect(150, 70, 191, 22))
         self.lineEdit_2.setEchoMode(QtWidgets.QLineEdit.Password)#Comando para esconder a senha
         self.lineEdit_2.setObjectName("Senha")
+        self.lineEdit_2.setPlaceholderText("Informe uma senha de 6 digitos")
         self.lineEdit_2.setToolTip("Senha de 6 digitos com apenas letras e/ou numeros")
         self.lineEdit_2.setFont(self.fontCampos)
         self.lineEdit_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_2))
@@ -1727,7 +4030,8 @@ class CadastroUsuario(QtWidgets.QWidget):
         self.lineEdit_3 = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_3.setGeometry(QtCore.QRect(150, 100, 191, 22))
         self.lineEdit_3.setObjectName("Confirmação de Senha")
-        self.lineEdit_3.setToolTip("Senha de 6 digitos apenas com letras e/ou números")
+        self.lineEdit_3.setPlaceholderText("Insira novamente a senha")
+        self.lineEdit_3.setToolTip("Insira novamente a senha")
         self.lineEdit_3.setMaxLength(6)
         self.lineEdit_3.setFont(self.fontCampos)
         self.lineEdit_3.setEchoMode(QtWidgets.QLineEdit.Password)#Comando para esconder a senha
@@ -1796,7 +4100,8 @@ class CadastroUsuario(QtWidgets.QWidget):
                         if self.radioButton.isChecked():#Se definido como admin = sim
                             usuario.insereAdminUsuario()#insere Administrador na tabela do BD
                         Mensagem.msg = "Usuario Cadastrado com sucesso!"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                         self.limpaCampos()
                     else:
@@ -1824,22 +4129,23 @@ class Ui_Form_EditProdMed(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_3 = QtWidgets.QLabel(Form)
-        self.label_3.setGeometry(QtCore.QRect(550, 10, 100, 20))
+        self.label_3.setGeometry(QtCore.QRect(550, 10, 200, 20))
         self.label_3.setFont(self.fontLabel)
         self.label_3.setObjectName("Total de Itens")
 
         self.label_4 = QtWidgets.QLabel(Form)
-        self.label_4.setGeometry(QtCore.QRect(50, 50, 151, 20))
+        self.label_4.setGeometry(QtCore.QRect(40, 55, 151, 20))
         self.label_4.setObjectName("Produto/Medicamento")
 
         self.label_5 = QtWidgets.QLabel(Form)
         self.label_5.setFont(self.fontLabel)
-        self.label_5.setGeometry(QtCore.QRect(10, 245, 300, 20))
+        self.label_5.setGeometry(QtCore.QRect(10, 245, 350, 20))
         self.label_5.setObjectName("Medicamento vencido")
 
         self.label_6 = QtWidgets.QLabel(Form)
@@ -1867,11 +4173,12 @@ class Ui_Form_EditProdMed(object):
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(180, 50, 470, 26))
         self.lineEdit.setToolTip("Digite o nome ou Lote do item")
+        self.lineEdit.setPlaceholderText("Digite o nome ou lote do item desejado")
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setObjectName("nomeItem")
 
         self.tabela = QtWidgets.QTableWidget(Form)
-        self.tabela.setGeometry(QtCore.QRect(50, 110, 600, 146))
+        self.tabela.setGeometry(QtCore.QRect(50, 90, 600, 146))
         self.tabela.setColumnCount(10)     #Set dez columns
         self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante","Fornecedor"])
 
@@ -2015,9 +4322,10 @@ class Ui_Form_EditProdMedInfo(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 381, 22))
@@ -2025,6 +4333,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit.setText(item.getNomeItem()[0][0])
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit))
+        self.lineEdit.setToolTip("Nome do item")
 
         self.lineEdit_2 = QtWidgets.QLineEdit(Form)
         self.lineEdit_2.setGeometry(QtCore.QRect(160, 70, 131, 22))
@@ -2032,6 +4341,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_2.setText(str(item.getQtdItem()[0][0]))
         self.lineEdit_2.setFont(self.fontCampos)
         self.lineEdit_2.setValidator(QtGui.QIntValidator())
+        self.lineEdit_2.setToolTip("Quantidade do item que há em estoque")
 
         self.lineEdit_4 = QtWidgets.QLineEdit(Form)
         self.lineEdit_4.setGeometry(QtCore.QRect(160, 100, 131, 22))
@@ -2039,6 +4349,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_4.setText(str(item.getQtdMinima()[0][0]))
         self.lineEdit_4.setFont(self.fontCampos)
         self.lineEdit_4.setValidator(QtGui.QIntValidator())
+        self.lineEdit_4.setToolTip("Quantidade minima que deseja ser avisado")
 
         self.lineEdit_5 = QtWidgets.QLineEdit(Form)
         self.lineEdit_5.setGeometry(QtCore.QRect(160, 130, 131, 22))
@@ -2047,6 +4358,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_5.setFont(self.fontCampos)
         self.lineEdit_5.setMaxLength(30)
         self.lineEdit_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_5))
+        self.lineEdit_5.setToolTip("Numero de identificação fornecido pelo fabricante\nEscrito na embalagem")
 
         self.lineEdit_6 = QtWidgets.QLineEdit(Form)
         self.lineEdit_6.setGeometry(QtCore.QRect(160, 160, 131, 22))
@@ -2055,6 +4367,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_6.setFont(self.fontCampos)
         self.lineEdit_6.setMaxLength(20)
         self.lineEdit_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.lineEdit_6))
+        self.lineEdit_6.setToolTip("Empresa ou entidade que forneceu o item")
 
         self.lineEdit_3 = QtWidgets.QLineEdit(Form)
         self.lineEdit_3.setGeometry(QtCore.QRect(410, 70, 131, 22))
@@ -2063,6 +4376,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_3.setFont(self.fontCampos)
         self.lineEdit_3.setMaxLength(30)
         self.lineEdit_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z ]+"), self.lineEdit_3))
+        self.lineEdit_3.setToolTip("Empresa que produziu o item")
 
         self.lineEdit_7 = QtWidgets.QLineEdit(Form)
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
@@ -2070,6 +4384,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_7.setText(str(item.getPesoItem()[0][0]))
         self.lineEdit_7.setFont(self.fontCampos)
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
+        self.lineEdit_7.setToolTip("Peso do item, somente os numeros\nEX:125.00")
 
         self.lineEdit_8 = QtWidgets.QLineEdit(Form)
         self.lineEdit_8.setGeometry(QtCore.QRect(410, 130, 131, 22))
@@ -2077,6 +4392,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_8.setText(item.getUnidadeItem()[0][0])
         self.lineEdit_8.setFont(self.fontLabel)
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
+        self.lineEdit_8.setToolTip("Unidade de medida do item\nEX:mg, ml")
 
         self.label = QtWidgets.QLabel(Form)
         self.label.setFont(self.fontLabel)
@@ -2127,14 +4443,17 @@ class Ui_Form_EditProdMedInfo(object):
         self.pushButton_3 = QtWidgets.QPushButton(Form)
         self.pushButton_3.setGeometry(QtCore.QRect(460, 200, 91, 28))
         self.pushButton_3.setObjectName("Menu Principal")
+        self.pushButton_3.setToolTip("Voltar ao Menu Principal")
 
         self.pushButton_4 = QtWidgets.QPushButton(Form)
         self.pushButton_4.setGeometry(QtCore.QRect(460, 320, 91, 28))
         self.pushButton_4.setObjectName("Excluir")
+        self.pushButton_4.setToolTip("Exclui o item\n deixando-o inapto para consumo")
 
         self.pushButton_5 = QtWidgets.QPushButton(Form)
         self.pushButton_5.setGeometry(QtCore.QRect(460, 320, 91, 28))
         self.pushButton_5.setObjectName("Restaurar")
+        self.pushButton_5.setToolTip("Restaura o item\n deixando-o apto para consumo")
 
         if item.estaExcluido(EditarProdEMedInfo.lote):
             self.pushButton_4.setVisible(False)
@@ -2148,6 +4467,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.dateEdit.setDate(item.getDataVenc()[0][0])
         self.dateEdit.setFont(self.fontCampos)
         self.dateEdit.setObjectName("dateEdit_Data_nasc")
+        self.dateEdit.setToolTip("alterar data de nascimento")
 
         self.pushButton_2.clicked.connect(self.copiarCampos)
         self.pushButton_4.clicked.connect(self.copiarCampos)
@@ -2205,7 +4525,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
         item = Item()
         item.excluiItem(lote)
         Mensagem.msg = "Item Excluído com sucesso"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.switch_window_2.emit()
 
     def restaurarItem(self):
@@ -2215,7 +4536,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
         item = Item()
         item.restauraItem(lote)
         Mensagem.msg = "Item Restaurado com sucesso"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.switch_window_2.emit()
 
     def atualizarItem(self):
@@ -2254,7 +4576,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
 
                         self.registraEntrada(lote, quantidade)
                         Mensagem.msg = "Item atualizado com sucesso!"
-                        Mensagem.cor = "Blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window_2.emit()
                 else:
                     self.label.clear()
@@ -2272,7 +4595,8 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
                     item.updateBDitem(EditarProdEMedInfo.lote)
                     self.registraEntrada(lote, quantidade)
                     Mensagem.msg = "Item atualizado com sucesso!"
-                    Mensagem.cor = "Blue"
+                    Mensagem.cor = "black"
+                    Mensagem.img = 1
                     self.switch_window_2.emit()
             else:
                 self.label.setText("Data de validade menor que a atual!")
@@ -2318,9 +4642,10 @@ class EditarPaciente(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.label_Erros = QtWidgets.QLabel(Form)
         self.label_Erros.setGeometry(QtCore.QRect(300, 10, 300, 20))
@@ -2352,6 +4677,7 @@ class EditarPaciente(QtWidgets.QWidget):
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(185, 50, 361, 25))
         self.lineEdit.setToolTip("Digite o 1° nome ou cpf do paciente")
+        self.lineEdit.setPlaceholderText("Digite o 1° nome ou cpf do paciente")
         self.lineEdit.setMaxLength(15)
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setObjectName("Primeiro nome ou cpf do paciente")
@@ -2446,7 +4772,7 @@ class EditarPaciente(QtWidgets.QWidget):
 class UI_Form_EditarPacienteInfo(object):
     def setupUi(self, Form):
         paciente = Paciente()
-        paciente.recuperaBDpacVar(EditarPacienteInfo.cpf)
+        paciente.recuperaBDpacAtr(EditarPacienteInfo.cpf)
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
         Form.setObjectName("Form")
         Form.setFixedSize(582, 228)
@@ -2458,9 +4784,10 @@ class UI_Form_EditarPacienteInfo(object):
         self.fontLabelErro.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
         self.pushButton_MenuPrin.setGeometry(QtCore.QRect(470, 110, 91, 28))
@@ -2586,7 +4913,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                             paciente.setDataNasc(data_nasc)
                             paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
                             Mensagem.msg = "Paciente atualizado com sucesso"
-                            Mensagem.cor = "blue"
+                            Mensagem.cor = "black"
+                            Mensagem.img = 1
                             self.switch_window.emit()
                     else:
                         paciente.setNomePaciente(nome)
@@ -2595,7 +4923,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                         paciente.setDataNasc(data_nasc)
                         paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
                         Mensagem.msg = "Paciente atualizado com sucesso"
-                        Mensagem.cor = "blue"
+                        Mensagem.cor = "black"
+                        Mensagem.img = 1
                         self.switch_window.emit()
                 else:
                     self.label_Erro.setText("Idade não permitida!")
@@ -2633,9 +4962,10 @@ class EditarUsuario(QtWidgets.QWidget):
         Form.setFixedSize(576, 275)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
 
         self.fontLabelErro = QtGui.QFont()
         self.fontLabelErro.setFamily("Arial")
@@ -2682,7 +5012,8 @@ class EditarUsuario(QtWidgets.QWidget):
         self.lineEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit))
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setMaxLength(30)
-        self.lineEdit.setToolTip("Nome de no máximo 30 dígitos")
+        self.lineEdit.setToolTip("Informe o nome do usuario desejado")
+        self.lineEdit.setPlaceholderText("Informe o nome do usuario")
 
         self.campoTexto = QtWidgets.QTextEdit(Form)
         self.campoTexto.setGeometry(QtCore.QRect(40, 160, 400, 100))
@@ -2699,48 +5030,53 @@ class EditarUsuario(QtWidgets.QWidget):
         self.pushButton.clicked.connect(self.realizaBusca)
 
         self.pushButton_2.clicked.connect(self.limpaJanela)
+        self.pushButton_2.clicked.connect(self.lineEdit.clear)
 
         self.pushButton_3.clicked.connect(self.lineEdit.copy)
         self.pushButton_3.clicked.connect(self.editaUsuario)
 
         self.pushButton_4.clicked.connect(self.lineEdit.copy)
-        self.pushButton_4.clicked.connect(self.excluiUsuario)
+        self.pushButton_4.clicked.connect(self.excluirUsuario)
 
         self.pushButton_6.clicked.connect(self.lineEdit.copy)
-        self.pushButton_6.clicked.connect(self.restauraUsuario)
+        self.pushButton_6.clicked.connect(self.restaurarUsuario)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
     def limpaJanela(self):
-        self.lineEdit.clear()
         self.label_3.clear()
         self.pushButton_3.setVisible(False)
         self.campoTexto.clear()
 
-    def excluiUsuario(self):
+    def excluirUsuario(self):
         nome = self.lineEdit.text()
         usuario = Usuario()
         usuario.setNomeUsuario(nome)
         usuario.excluiUsuario()
         Mensagem.msg = "Usuario Excluido com sucesso!"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.pushButton_4.setVisible(False)  # Desliga Botao Excluir
         self.pushButton_6.setVisible(True)  # Liga botao Restaurar
-        self.realizaBusca()
         self.switch_window_3.emit()
+        self.limpaJanela()
+        self.lineEdit.clear()
 
-    def restauraUsuario(self):
+
+    def restaurarUsuario(self):
         nome = self.lineEdit.text()
         usuario = Usuario()
         usuario.setNomeUsuario(nome)
         usuario.restauraUsuario()
         Mensagem.msg = "Usuario restaurado com sucesso!"
-        Mensagem.cor = "blue"
+        Mensagem.cor = "black"
+        Mensagem.img = 1
         self.pushButton_4.setVisible(True)  # liga Botao Excluir
         self.pushButton_6.setVisible(False)  # Desliga botao restaurar
-        self.realizaBusca()
         self.switch_window_3.emit()
+        self.limpaJanela()
+        self.lineEdit.clear()
 
     def realizaBusca(self):
         nomeUsu = self.lineEdit.text()
@@ -2779,7 +5115,7 @@ class EditarUsuario(QtWidgets.QWidget):
         nomeUsu = self.lineEdit.text()
         usuario = Usuario()
         print(EditarUsuarioInfo.nomeAntigo)
-        if EditarUsuarioInfo.nomeAntigo != "" and usuario.validaNomeUsuario(nomeUsu):
+        if EditarUsuarioInfo.nomeAntigo != "":
             self.pushButton_3.setVisible(False)
             self.switch_window_2.emit()  # Chama a janela para editar as informações do usuario_id
         else:
@@ -2847,7 +5183,8 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
             else:
                 usuario.retiraAdminUsuario()
             Mensagem.msg = "Usuario Atualizado com sucesso!"
-            Mensagem.cor = "blue"
+            Mensagem.cor = "black"
+            Mensagem.img = 1
             self.switch_window_2.emit()
         else:
             self.label_4.setText("Confirmação de Senha incorreta!")  # Confirma se as duas senhas estão corretas
@@ -2882,9 +5219,12 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label_6 = QtWidgets.QLabel(Form)
         self.label_6.setGeometry(QtCore.QRect(10, 270, 55, 16))
@@ -2929,6 +5269,8 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
         self.lineEdit = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit.setGeometry(QtCore.QRect(150, 40, 191, 22))
         self.lineEdit.setObjectName("Campo Usuario")
+        self.lineEdit.setToolTip("Insira seu Usuário")
+        self.lineEdit.setPlaceholderText("insira seu login de acesso")
         self.lineEdit.setText(EditarUsuarioInfo.nomeAntigo)
         self.lineEdit.setPlaceholderText("Ex.(abc123)")
         self.lineEdit.setFont(self.fontCampos)
@@ -2939,6 +5281,7 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
         self.lineEdit_2 = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_2.setGeometry(QtCore.QRect(150, 70, 191, 22))
         self.lineEdit_2.setObjectName("Campo Senha")
+        self.lineEdit_2.setPlaceholderText("Insira uma senha de 6 digitos")
         self.lineEdit_2.setToolTip("Senha de 6 digitos apenas com letras e/ou números")
         self.lineEdit_2.setFont(self.fontCampos)
         self.lineEdit_2.setMaxLength(6)
@@ -2948,7 +5291,8 @@ class EditarUsuarioInfo(QtWidgets.QWidget):
         self.lineEdit_3 = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_3.setGeometry(QtCore.QRect(150, 100, 191, 22))
         self.lineEdit_3.setObjectName("Campo Confirmacao De senha")
-        self.lineEdit_3.setToolTip("Senha de 6 digitos apenas com letras e/ou números")
+        self.lineEdit_3.setPlaceholderText("Digite novamente a senha")
+        self.lineEdit_3.setToolTip("informe a mesma senha digitada anteriormente")
         self.lineEdit_3.setFont(self.fontCampos)
         self.lineEdit_3.setMaxLength(6)
         self.lineEdit_3.setEchoMode(QtWidgets.QLineEdit.Password)  # Comando para esconder a senha
@@ -2999,6 +5343,7 @@ class Mensagem(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal()
     msg = ""
     cor = "black"
+    img= None
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -3009,6 +5354,21 @@ class Mensagem(QtWidgets.QWidget):
         Form.setObjectName("Form")
         Form.setFixedSize(400, 250)
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        self.imagem = QtWidgets.QLabel(Form)
+        self.imagem.setScaledContents(True)
+        self.imagem.setGeometry(150,90,90,90)
+        
+        print (self.img)
+        if self.img == 1:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado1.png"))
+        if self.img == 2:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado2.png"))
+        if self.img == 3:
+            self.imagem.setPixmap(QtGui.QPixmap("img/confirmado3.png"))
+        if self.img == 4:
+            self.imagem.setPixmap(QtGui.QPixmap("img/negado1.png"))
+
+        img= None
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
@@ -3020,11 +5380,11 @@ class Mensagem(QtWidgets.QWidget):
         self.label.setFont(self.fontLabel)
         self.label.setAlignment(QtCore.Qt.AlignHCenter)
         self.label.setStyleSheet('QLabel {color:' + self.cor + '}')
-        self.label.setGeometry(0, 80, 400, 125)
+        self.label.setGeometry(0, 30, 400, 125)
         self.label.setObjectName("Usuario")
 
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(155, 155, 91, 28))
+        self.pushButton.setGeometry(QtCore.QRect(155, 200, 91, 28))
         self.pushButton.setObjectName("OK")
 
         self.retranslateUi(Form)
@@ -3034,7 +5394,7 @@ class Mensagem(QtWidgets.QWidget):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Mensagem de Aviso!"))
+        Form.setWindowTitle(_translate("Form", "Mensagem de Aviso"))
         self.label.setText(_translate("Form", self.msg))
         self.pushButton.setText(_translate("Form", "OK"))
 
@@ -3043,6 +5403,424 @@ class Mensagem(QtWidgets.QWidget):
 
 
 #=========================================================================================================================
+class Ui_Form_VisualizaPac(object):
+
+    def setupUi(self, Form):
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setObjectName("Form")
+        Form.setFixedSize(630, 450)
+
+        self.pushButton_4 = QtWidgets.QPushButton(Form)
+        self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
+        self.pushButton_4.setObjectName("Menu Principal")
+
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
+        self.tabela.setColumnCount(6)     #Set dez columns
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Visualizar Pacientes"))
+        self.pushButton_4.setText(_translate("Form", "Menu principal"))
+
+class VisualizarPac(QtWidgets.QWidget, Ui_Form_VisualizaPac):
+
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
+        self.paciente = Paciente()
+        self.buscarPaciente()
+
+
+    def limparTela(self):
+    	self.tabela.clear()
+    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+    def TelaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def buscarPaciente(self):
+        self.limparTela()
+        self.paciente.recuperaBDpacienteSP()
+        self.preencheTabela()
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+
+    def preencheTabela(self):
+        dados = self.paciente.getPaciente()
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            for num_coluna, dado in enumerate(linha_dado):
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(6):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+#=========================================================================================================================
+
+class Ui_Form_VisualizaEst(object):
+
+    def setupUi(self, Form):
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setObjectName("Form")
+        Form.setFixedSize(630, 450)
+
+        self.pushButton_4 = QtWidgets.QPushButton(Form)
+        self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
+        self.pushButton_4.setObjectName("Menu Principal")
+
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
+        self.tabela.setColumnCount(10)     #Set dez columns
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Visualizar Estoque"))
+        self.pushButton_4.setText(_translate("Form", "Menu principal"))
+
+class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
+
+    switch_window = QtCore.pyqtSignal()
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
+        self.item = Item()
+        self.buscarItem1()
+
+
+    def limparTela(self):
+    	self.tabela.clear()
+    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+    def TelaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def buscarItem1(self):
+        self.item.recuperaItemBDSP()
+        self.preencheTabela()
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+
+    def preencheTabela(self):
+        dados = self.item.recuperaItemBDSP()
+        print("dados")
+        print(dados)
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            for num_coluna, dado in enumerate(linha_dado):
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(10):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+#=======================================================================================================
+class Ui_BaixaManual(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.setWindowIcon(QtGui.QIcon("img/home.png"))
+        Form.setFixedSize(573, 423)
+
+        self.fontLabel = QtGui.QFont()
+        self.fontLabel.setFamily("Arial")
+        self.fontLabel.setPointSize(12)
+        self.fontLabel.setBold(True)
+        self.fontLabel.setWeight(75)
+
+        self.fontLabel1 = QtGui.QFont()
+        self.fontLabel1.setFamily("Arial")
+        self.fontLabel1.setPointSize(9)
+        self.fontLabel1.setBold(True)
+        self.fontLabel1.setWeight(75)
+
+        self.fontCampos = QtGui.QFont()
+        self.fontCampos.setFamily("Arial")
+        self.fontCampos.setPointSize(9)
+        self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
+
+        self.pushButton_MenuPrin = QtWidgets.QPushButton(Form)
+        self.pushButton_MenuPrin.setGeometry(QtCore.QRect(435, 140, 111, 28))#==================
+        self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
+
+        self.label_qtd = QtWidgets.QLabel(Form)
+        self.label_qtd.setGeometry(QtCore.QRect(30, 110, 71, 16))
+        self.label_qtd.setObjectName("label_qtd")
+        self.label_qtd.setVisible(False)
+
+        self.lineEdit_Qtd = QtWidgets.QLineEdit(Form)
+        self.lineEdit_Qtd.setGeometry(QtCore.QRect(115, 102, 120, 25))
+        self.lineEdit_Qtd.setObjectName("Campo  Quantidade")
+        self.lineEdit_Qtd.setToolTip("Digite a quantidade desejada \ndo item à ser retirado")
+        self.lineEdit_Qtd.setPlaceholderText("QTD do item")
+        self.lineEdit_Qtd.setFont(self.fontCampos)
+        self.lineEdit_Qtd.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.lineEdit_Qtd))
+        self.lineEdit_Qtd.setVisible(False)
+
+#===========================
+        self.tabela = QtWidgets.QTableWidget(Form)
+        self.tabela.setGeometry(QtCore.QRect(40, 250,500, 146))
+        self.tabela.setColumnCount(10)  # Set dez columns
+        self.tabela.setHorizontalHeaderLabels(
+            ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Peso", "Unid", "Fabricante", "Fornecedor"])
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+#============================
+        self.label_Item = QtWidgets.QLabel(Form)
+        self.label_Item.setGeometry(QtCore.QRect(63, 70, 41, 20))
+        self.label_Item.setObjectName("label_Item")
+
+        self.lineEdit_Nome = QtWidgets.QLineEdit(Form)
+        self.lineEdit_Nome.setGeometry(QtCore.QRect(115, 70, 310, 25))
+        self.lineEdit_Nome.setObjectName("Campo Nome ou lote")
+        self.lineEdit_Nome.setToolTip("Digite o nome ou lote do item à ser retirado")
+        self.lineEdit_Nome.setPlaceholderText("Digite o nome ou lote do item")
+        self.lineEdit_Nome.setFont(self.fontCampos)
+        self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9]+"), self.lineEdit_Nome))
+
+        self.label_Erro = QtWidgets.QLabel(Form)
+        self.label_Erro.setGeometry(QtCore.QRect(30, 130, 340, 20))
+        self.label_Erro.setObjectName("label_Erro")
+        self.label_Erro.setFont(self.fontLabel1)
+
+        self.label_3 = QtWidgets.QLabel(Form)
+        self.label_3.setGeometry(QtCore.QRect(30, 220, 341, 20))
+        self.label_3.setFont(self.fontLabel)
+        self.label_3.setObjectName("Total de Itens")
+
+        self.label_6 = QtWidgets.QLabel(Form)
+        self.label_6.setFont(self.fontLabel)
+        self.label_6.setGeometry(QtCore.QRect(150,220, 341, 20))
+        self.label_6.setObjectName("Total de vencidos")
+
+        self.pushButton_limpar = QtWidgets.QPushButton(Form)
+        self.pushButton_limpar.setGeometry(QtCore.QRect(435, 170, 111, 28))#===============
+        self.pushButton_limpar.setObjectName("pushButton_limpar")
+
+
+        self.pushButton_retirar = QtWidgets.QPushButton(Form)
+        self.pushButton_retirar.setGeometry(QtCore.QRect(435, 200, 111, 28))#===========
+        self.pushButton_retirar.setObjectName("pushButton_retirar")
+        self.pushButton_retirar.setVisible(False)
+
+#============
+        self.pushButton_buscar = QtWidgets.QPushButton(Form)
+        self.pushButton_buscar.setGeometry(QtCore.QRect(435, 70, 111, 28))#===========
+        self.pushButton_buscar.setObjectName("pushButton_buscar")
+        self.pushButton_buscar.clicked.connect(self.lineEdit_Nome.copy)
+#=============
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Baixa Item"))
+        self.label_qtd.setText(_translate("Form", "Quantidade:"))
+        self.label_Item.setText(_translate("Form", "Item:"))
+        self.pushButton_limpar.setText(_translate("Form", "Limpar"))
+        self.pushButton_retirar.setText(_translate("Form", "Retirar"))
+        self.pushButton_buscar.setText(_translate("Form", "Buscar"))#======
+        self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
+
+
+
+class BaixaManual(QtWidgets.QWidget, Ui_BaixaManual):
+
+    switch_window = QtCore.pyqtSignal()#MENU
+    switch_window_2 = QtCore.pyqtSignal()#Tela Mensagem
+
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.setupUi(self)
+        self.pushButton_MenuPrin.clicked.connect(self.telaMenuPrincipal)
+        self.pushButton_retirar.clicked.connect(self.retirarItem)
+        self.pushButton_limpar.clicked.connect(self.limparCampos)
+        self.pushButton_buscar.clicked.connect(self.buscaMedicamentos)
+    
+    def limparCampos(self):
+        self.label_Erro.clear()
+        self.lineEdit_Qtd.setVisible(False)
+        self.label_qtd.setVisible(False)
+        self.tabela.clear()
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.lineEdit_Nome.clear()
+        self.lineEdit_Qtd.clear()
+        self.pushButton_retirar.setVisible(False)
+        self.label_3.setVisible(False)
+        self.label_6.setVisible(False)
+
+    def buscaMedicamentos(self):
+
+        loteNome=self.lineEdit_Nome.text()
+        item=Item()
+        if loteNome:
+            if item.validaLoteNomeItem(loteNome):
+                item.recuperaBDitem(loteNome)
+                item.recuperaItemBDitem(loteNome)
+
+                if item.validaLoteItem(loteNome):
+                    self.pushButton_retirar.setVisible(True)
+                    self.label_qtd.setVisible(True)
+                    self.lineEdit_Qtd.setVisible(True)
+
+                self.preencheTabela(item)
+                self.label_3.setVisible(True)
+                self.label_3.setText("Total: "+str(self.calculaQuantidade(item)))
+                if self.calculaVencidos(item) > 0:
+                    self.label_6.setText("Vencidos: "+str(self.calculaVencidos(item)))
+            
+                self.tabela.resizeColumnsToContents()
+                self.tabela.resizeRowsToContents()
+            else:
+                self.label_Erro.setText("Produto não encontrado")
+                self.label_Erro.setStyleSheet('QLabel {color: red}')
+        else:
+            self.limparCampos()
+
+    def preencheTabela(self, item):
+        dados = item.getItem()
+        self.tabela.setRowCount(0)
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            if dados[num_linha][10] == 0 and dados[num_linha][3] > 0:  # preenche tabela se nao estiver vencido e se não estiver zerado
+                for num_coluna, dado in enumerate(linha_dado):
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+            else:
+                self.tabela.hideRow(num_linha)
+
+        for linha in range(len(dados)):#Define como vencido as datas ultrapassadas
+            vencido = "VENCIDO"
+            self.tabela.setItem(linha, 7, self.formatCell(str(dados[linha][7]).lower()))#Coluna 7 é a coluna da unidade necessária estar em minuscula
+            if dados[linha][5] < date.today():
+                self.tabela.setItem(linha, 5, self.formatCell(str(vencido)))
+            else:
+                dataVenc = dados[linha][5].strftime('%d/%m/%Y')
+                self.tabela.setItem(linha, 5, self.formatCell(dataVenc))
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(10):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+
+    def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+    def calculaQuantidade(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] > date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        return soma
+
+    def calculaVencidos(self, item):
+        soma = 0
+        dados = item.getItem()
+        for linha in range(len(item.getItem())):
+            if dados[linha][5] < date.today() and dados[linha][10] == 0:#Coluna numero 5 é a coluna das datas
+                qtd = dados[linha][3]#Coluna numero 3 é a coluna das quantidades
+                soma += qtd
+        if soma > 0:
+            self.label_Erro.setText("DESPREZE OS MEDICAMENTOS VENCIDOS!")
+            self.label_Erro.setStyleSheet('QLabel {color: red}')
+        return soma
+
+    def retirarItem(self):
+        loteNome = self.lineEdit_Nome.text()
+        qtdDigitada = self.lineEdit_Qtd.text()
+        item = Item()
+        if loteNome and int (qtdDigitada)>0:
+            item=Item()
+            item.recuperaBDitem(loteNome)            
+        
+            if item.validaLoteItem(loteNome):
+                item.setLote(loteNome)
+                qtd=item.getQtdItem()[0][0]
+                decremento = int(qtd)-int(qtdDigitada)
+                qtdDigitada=int (qtdDigitada)
+                
+                if int(qtdDigitada) > int(item.getQtdItem()[0][0]):
+                    Mensagem.msg="Valor declarado maior que o disponível"
+                    Mensagem.cor="black"
+                    Mensagem.img=4
+                if decremento > int (item.getQtdMinima()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!"
+                    Mensagem.cor="black"
+                    Mensagem.img=1
+
+                if decremento > 0 and decremento < int (item.getQtdMinima()[0][0]):
+                    Mensagem.msg="Retirado com sucesso!\n Quantidade minima atingida."
+                    Mensagem.cor="black"
+                    Mensagem.img=2
+                if decremento == 0:
+                    Mensagem.msg="Retirado com sucesso!\n Não há mais saldo deste lote em estoque."
+                    Mensagem.cor="black"
+                    Mensagem.img=3
+
+                self.switch_window_2.emit()
+                if decremento>=0:
+                    item.updateQtdItem(decremento)
+                self.limparCampos()
+
+        else:
+            print("qtd digitada<0")
+            self.limparCampos()
+
+
+
+    def telaMenuPrincipal(self):
+        self.switch_window.emit()
+
+    def copiaCampos(self):
+        self.lineEdit_Qtd.copy()
+        self.lineEdit_Nome.copy()
+
+#===========================================================================================================================
+
+
 #=========================================================================================================================
 
 class Ui_FormMenuPrincipal(object):
@@ -3056,6 +5834,11 @@ class Ui_FormMenuPrincipal(object):
         self.imagem.setScaledContents(True)
         self.imagem.setGeometry(320,10,230,140)
         self.imagem.setToolTip("Associação de Atendimento das Portadoras\nde Necessidades Especiais Nossa Senhora de Lourdes")
+        
+        self.pushButton_Sair = QtWidgets.QPushButton(Form)
+        self.pushButton_Sair.setGeometry(QtCore.QRect(200, 12, 60, 28))
+        self.pushButton_Sair.setObjectName("Sair")
+        self.pushButton_Sair.setToolTip("Realizar LogOut")
 
 
         self.fontLabel = QtGui.QFont()
@@ -3065,19 +5848,22 @@ class Ui_FormMenuPrincipal(object):
         self.fontLabel.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label = QtWidgets.QLabel(Form)
         self.label.setFont(self.fontLabel)
         self.label.setStyleSheet('QLabel {color: gray')
         self.label.setGeometry(30, 10, 150, 30)
-        #self.label.setFont(self.fontCampos)
+        self.label.setFont(self.fontCampos)
         self.label.setObjectName("Usuário")
 
         self.groupBox = QtWidgets.QGroupBox(Form)
-        self.groupBox.setGeometry(QtCore.QRect(290, 150, 251, 261))
+        self.groupBox.setGeometry(QtCore.QRect(20, 212, 251, 200))
         self.groupBox.setObjectName("groupBox")
 
         self.pushButton_VisuPac = QtWidgets.QPushButton(self.groupBox)
@@ -3095,10 +5881,10 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_EditPac.setObjectName("pushButton_8")
         self.pushButton_EditPac.setToolTip("Alterar os dados dos pacientes")
 
-        self.pushButton_EditPresc = QtWidgets.QPushButton(self.groupBox)
-        self.pushButton_EditPresc.setGeometry(QtCore.QRect(20, 200, 211, 28))
-        self.pushButton_EditPresc.setObjectName("pushButton_retirar")
-        self.pushButton_EditPresc.setToolTip("Alterar os dados das prescrições")
+        self.pushButton_BaixaManual = QtWidgets.QPushButton(self.groupBox)
+        self.pushButton_BaixaManual.setGeometry(QtCore.QRect(20, 200, 211, 28))
+        self.pushButton_BaixaManual.setObjectName("pushButton_retirar")
+        self.pushButton_BaixaManual.setToolTip("Realizar baixa manual de \n um medicamento especifico")
 
         self.pushButton_CadPresc = QtWidgets.QPushButton(self.groupBox)
         self.pushButton_CadPresc.setGeometry(QtCore.QRect(20, 160, 211, 28))
@@ -3106,7 +5892,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_CadPresc.setToolTip("Cadastrar novas prescrições")
 
         self.groupBox_2 = QtWidgets.QGroupBox(Form)
-        self.groupBox_2.setGeometry(QtCore.QRect(30, 170, 231, 101))
+        self.groupBox_2.setGeometry(QtCore.QRect(300, 170, 231, 101))
         self.groupBox_2.setObjectName("groupBox_2")
 
         self.pushButton_EditItem = QtWidgets.QPushButton(self.groupBox_2)
@@ -3120,7 +5906,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_CadItem.setToolTip("Cadastrar novos itens")
 
         self.groupBox_3 = QtWidgets.QGroupBox(Form)
-        self.groupBox_3.setGeometry(QtCore.QRect(30, 60, 231, 101))
+        self.groupBox_3.setGeometry(QtCore.QRect(30, 60, 231, 140))
         self.groupBox_3.setObjectName("groupBox_3")
 
         self.pushButton_VisuEst = QtWidgets.QPushButton(self.groupBox_3)
@@ -3133,8 +5919,13 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_BaixEst.setObjectName("pushButton_limpar")
         self.pushButton_BaixEst.setToolTip("Retirar item de estoque")
 
+        self.pushButton_BaixaManual = QtWidgets.QPushButton(self.groupBox_3)
+        self.pushButton_BaixaManual.setGeometry(QtCore.QRect(10, 95, 211, 28))
+        self.pushButton_BaixaManual.setObjectName("pushButton_retirar")
+        self.pushButton_BaixaManual.setToolTip("Realizar baixa manual de \n um medicamento especifico")
+
         self.groupBox_4 = QtWidgets.QGroupBox(Form)
-        self.groupBox_4.setGeometry(QtCore.QRect(30, 280, 231, 131))
+        self.groupBox_4.setGeometry(QtCore.QRect(300, 280, 231, 131))
         self.groupBox_4.setObjectName("groupBox_4")
         self.pushButton_EditUsu = QtWidgets.QPushButton(self.groupBox_4)
         self.pushButton_EditUsu.setGeometry(QtCore.QRect(20, 55, 201, 28))
@@ -3163,18 +5954,19 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_VisuPac.setText(_translate("Form", "Visualizar Pacientes"))
         self.pushButton_CadPac.setText(_translate("Form", "Cadastrar Paciente"))
         self.pushButton_EditPac.setText(_translate("Form", "Editar Paciente"))
-        self.pushButton_EditPresc.setText(_translate("Form", "Editar Prescrição"))
-        self.pushButton_CadPresc.setText(_translate("Form", "Cadastrar Prescrição"))
+        self.pushButton_BaixaManual.setText(_translate("Form", "Baixa Manual"))
+        self.pushButton_CadPresc.setText(_translate("Form", "Prescrição"))
         self.groupBox_2.setTitle(_translate("Form", "Produto / Medicamento"))
         self.pushButton_EditItem.setText(_translate("Form", "Editar Produto / Medicamento"))
         self.pushButton_CadItem.setText(_translate("Form", "Cadastrar Produto / Medicamento"))
         self.groupBox_3.setTitle(_translate("Form", "Estoque"))
         self.pushButton_VisuEst.setText(_translate("Form", "Visualizar estoque"))
-        self.pushButton_BaixEst.setText(_translate("Form", "Baixa em estoque"))
+        self.pushButton_BaixEst.setText(_translate("Form", "Baixa por Paciente"))
         self.groupBox_4.setTitle(_translate("Form", "Adminstração"))
         self.pushButton_EditUsu.setText(_translate("Form", "Editar Usuário"))
         self.pushButton_CadUsu.setText(_translate("Form", "Cadastro Usuário"))
         self.pushButton_ExcRecUsu.setText(_translate("Form", "Excluir/Recuperar Usuário"))
+        self.pushButton_Sair.setText(_translate("Form","LogOut"))
 
 
 class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
@@ -3187,6 +5979,13 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
     switch_window_5 = QtCore.pyqtSignal()
     switch_window_6 = QtCore.pyqtSignal()
     switch_window_7 = QtCore.pyqtSignal()
+    switch_window_8 = QtCore.pyqtSignal()
+    switch_window_9 = QtCore.pyqtSignal()
+    switch_window_10 = QtCore.pyqtSignal()
+    switch_window_11 = QtCore.pyqtSignal()
+    switch_window_12 = QtCore.pyqtSignal()
+
+
 
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -3199,8 +5998,31 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
         self.pushButton_CadPac.clicked.connect(self.telaCadastroPaciente)
         self.pushButton_EditPac.clicked.connect(self.telaEditarPaciente)
         self.pushButton_BaixEst.clicked.connect(self.telaBaixaItem)
+        self.pushButton_CadPresc.clicked.connect(self.telaPrescricao)
+        self.pushButton_VisuPac.clicked.connect(self.telaVisualizarPac)
+        self.pushButton_VisuEst.clicked.connect(self.telaVisualizarEst)
+        self.pushButton_Sair.clicked.connect(self.telaLogin)
+        self.pushButton_BaixaManual.clicked.connect(self.telaBaixaManual)
+
+    def telaBaixaManual(self):
+        self.switch_window_12.emit()
+
+    def telaVisualizarPac(self):
+        self.switch_window_10.emit()
+
+    def telaVisualizarEst(self):
+        self.switch_window_11.emit()
+   
+    def telaLogin(self):
+        self.switch_window_9.emit()
+
+    def telaPrescricao(self):
+        #self.switch_window_10.emit()
+        self.switch_window_8.emit()
+
 
     def telaBaixaItem(self):
+        #self.switch_window_10.emit()
         self.switch_window_7.emit()
 
     def telaEditarPaciente(self):
@@ -3215,12 +6037,23 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
             self.switch_window_2.emit()#Abre janela de cadastro
         else:
             Mensagem.msg = "Usuario não tem permissão de acesso!"
-            Mensagem.cor = "red"
+            Mensagem.cor = "black"
+            Mensagem.img =4
             self.switch_window_3.emit()#Abre Janela de Mansagem
 
     def telaExcluirUsuario(self):
         EditarUsuario.excluirUsu = True
-        self.switch_window_4.emit()
+        usu = Usuario()
+        if usu.validaEadmin(Usuario.usuLogado):
+
+            self.switch_window_4.emit()#Abre janela de Cadastro
+        else:
+            Mensagem.msg = "Usuário não tem permissão de acesso!"
+            Mensagem.cor = "black"
+            Mensagem.img = 4
+            self.switch_window_3.emit()
+
+
 
     def telaEditarUsuario(self):
         EditarUsuario.excluirUsu = False
@@ -3230,7 +6063,8 @@ class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
             self.switch_window_4.emit()#Abre janela de Cadastro
         else:
             Mensagem.msg = "Usuário não tem permissão de acesso!"
-            Mensagem.cor = "red"
+            Mensagem.cor = "black"
+            Mensagem.img = 4
             self.switch_window_3.emit()#Abre janela de Edição
 
     def telaCadastroProdEMed(self):
@@ -3260,17 +6094,20 @@ class Ui_FormLogin(object):
         fontError.setWeight(75)
 
         self.fontCampos = QtGui.QFont()
-        self.fontCampos.setFamily("Perpetua Titling MT")
+        self.fontCampos.setFamily("Arial")
         self.fontCampos.setPointSize(9)
         self.fontCampos.setWeight(75)
+        self.fontCampos.setCapitalization(3)
+        self.fontCampos.setCapitalization(3)
+
 
         self.label_1 = QtWidgets.QLabel(Form)
         self.label_1.setObjectName("Nome")
-        self.label_1.setGeometry(20, 48, 101, 20)
+        self.label_1.setGeometry(20, 45, 101, 20)
 
         self.label_2 = QtWidgets.QLabel(Form)
         self.label_2.setObjectName("Senha")
-        self.label_2.setGeometry(20, 78, 101, 20)
+        self.label_2.setGeometry(20, 75, 101, 20)
 
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setFont(font)
@@ -3287,7 +6124,8 @@ class Ui_FormLogin(object):
         self.lineEdit_1.setObjectName("lineEdit_1")
         self.lineEdit_1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit_1))
         self.lineEdit_1.setFont(self.fontCampos)
-        self.lineEdit_1.setToolTip("Usuário")
+        self.lineEdit_1.setToolTip("Insira seu Usuário")
+        self.lineEdit_1.setPlaceholderText("insira seu login de acesso")
         self.lineEdit_1.setGeometry(QtCore.QRect(70, 40, 300, 25))
 
         self.lineEdit_2 = QtWidgets.QLineEdit(Form)
@@ -3295,6 +6133,8 @@ class Ui_FormLogin(object):
         self.lineEdit_2.setEchoMode(QtWidgets.QLineEdit.Password)#Comando para esconder a senha
         self.lineEdit_2.setFont(self.fontCampos)
         self.lineEdit_2.setToolTip("Senha")
+        self.lineEdit_2.setToolTip("Insira sua senha")
+        self.lineEdit_2.setPlaceholderText("insira sua senha de acesso")
         self.lineEdit_2.setGeometry(QtCore.QRect(70, 70, 300, 25))
 
         self.btEntrar = QtWidgets.QPushButton(Form)
@@ -3311,6 +6151,7 @@ class Ui_FormLogin(object):
         self.label_1.setText(_translate("MainWindow", "Nome:"))
         self.label_2.setText(_translate("MainWindow", "Senha:"))
         self.btEntrar.setText(_translate("MainWindow", "Entrar"))
+        self.btEntrar.setShortcut(_translate("Form", "Return"))
         self.label_error.setText(_translate("MainWindow", ""))
 
 #============================================================================================
@@ -3341,7 +6182,7 @@ class LoginUsu(QtWidgets.QWidget, Ui_FormLogin):
         camponome = self.lineEdit_1.text()#admin
         camposenha = self.lineEdit_2.text()#123456
         usuario = Usuario()
-        if usuario.validaNomeUsuario(camponome):
+        if usuario.validaNomeUsuario(camponome) and not usuario.validaExcluido(camponome):
             if usuario.validaSenhaUsuario(camposenha):
                 acesso = RegistroAcessos(camponome)
                 acesso.logAcesso()#Envia o nome do usuario para a classe Log
@@ -3365,6 +6206,11 @@ class Controller:
         self.login.switch_window.connect(self.show_main)
         self.login.show()
 
+    def fechar_menu(self):
+        os.startfile("SCEMM.exe")#Incio a aplicação do SCEMM do mesmo diretório
+        sys.exit()#Finalizo esta aplicação
+        
+
     def show_main(self):
         self.menu = MenuPrincipal()
         self.menu.switch_window.connect(self.show_cad_item)#Botao Cadastrar Produto e Medicamento
@@ -3375,8 +6221,39 @@ class Controller:
         self.menu.switch_window_5.connect(self.show_cad_pac)
         self.menu.switch_window_6.connect(self.show_edit_pac)
         self.menu.switch_window_7.connect(self.show_baixa_item)
+        self.menu.switch_window_8.connect(self.show_cad_presc)
+        self.menu.switch_window_9.connect(self.fechar_menu)
+        self.menu.switch_window_10.connect(self.show_visualiza_pac)
+        self.menu.switch_window_11.connect(self.show_visualiza_est)
+        self.menu.switch_window_12.connect(self.show_baixa_manual)
+
         self.login.close()
         self.menu.show()
+
+    def show_cad_presc(self):
+        self.cadPresc = TelaPrescricao()
+        self.cadPresc.switch_window.connect(self.show_main)
+        self.cadPresc.switch_window_2.connect(self.show_msg)
+        self.cadPresc.show()
+
+
+    def show_visualiza_pac(self):
+        self.visualizarPac = VisualizarPac()
+        self.visualizarPac.switch_window.connect(self.show_main)
+        self.visualizarPac.switch_window_2.connect(self.show_msg)
+        self.visualizarPac.show()
+
+    def show_visualiza_est(self):
+        self.visualizarEst = VisualizarEstoque()
+        self.visualizarEst.switch_window.connect(self.show_main)
+        self.visualizarEst.switch_window_2.connect(self.show_msg)
+        self.visualizarEst.show()
+
+    def show_baixa_manual(self):
+        self.baixaMan = BaixaManual()
+        self.baixaMan.switch_window.connect(self.show_main)
+        self.baixaMan.switch_window_2.connect(self.show_msg)
+        self.baixaMan.show()
 
     def show_baixa_item(self):
         self.baixaItem = BaixaItem()
@@ -3448,11 +6325,10 @@ class Controller:
         self.msg.close()
 
 
-
-
 def main():
-    app = QtWidgets.QApplication(sys.argv)
+    #app = QtWidgets.QApplication(sys.argv)
     controller = Controller()
+
     controller.show_login()
     sys.exit(app.exec_())
 

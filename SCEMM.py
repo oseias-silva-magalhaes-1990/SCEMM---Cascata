@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask
 from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import datetime, date
+app = QtWidgets.QApplication(sys.argv)
 
 class BDprescricao(object):
     def __init__(self):
@@ -5965,7 +5966,7 @@ class Ui_FormMenuPrincipal(object):
         self.pushButton_EditUsu.setText(_translate("Form", "Editar Usuário"))
         self.pushButton_CadUsu.setText(_translate("Form", "Cadastro Usuário"))
         self.pushButton_ExcRecUsu.setText(_translate("Form", "Excluir/Recuperar Usuário"))
-        self.pushButton_Sair.setText(_translate("Form","Sair"))
+        self.pushButton_Sair.setText(_translate("Form","LogOut"))
 
 
 class MenuPrincipal(QtWidgets.QWidget, Ui_FormMenuPrincipal):
@@ -6206,8 +6207,10 @@ class Controller:
         self.login.show()
 
     def fechar_menu(self):
-        app=sys.executable
-        os.execl(app,app, *sys.argv)
+        os.startfile("SCEMM.exe")
+        self.show_login
+        sys.exit()
+        
 
     def show_main(self):
         self.menu = MenuPrincipal()
@@ -6324,7 +6327,7 @@ class Controller:
 
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
+    #app = QtWidgets.QApplication(sys.argv)
     controller = Controller()
 
     controller.show_login()

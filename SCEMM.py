@@ -6208,7 +6208,6 @@ class Controller:
 
     def fechar_menu(self):
         os.startfile("SCEMM.exe")
-        self.show_login
         sys.exit()
         
 

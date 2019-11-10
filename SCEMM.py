@@ -6207,8 +6207,8 @@ class Controller:
         self.login.show()
 
     def fechar_menu(self):
-        sys.exit()#Finalizo esta aplicação
         os.startfile("SCEMM.exe")#Incio a aplicação do SCEMM do mesmo diretório
+        sys.exit()#Finalizo esta aplicação
         
 
     def show_main(self):

@@ -1790,7 +1790,7 @@ class BaixaItem(QtWidgets.QWidget):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Baixa do restoque por paciente"))
+        Form.setWindowTitle(_translate("Form", "Baixa do estoque por paciente"))
         Form.setToolTip(_translate("Form", "Adicionar mais campos"))
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))

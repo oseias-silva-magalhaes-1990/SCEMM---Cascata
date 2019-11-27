@@ -2,11 +2,12 @@ import os
 import sys
 import psutil as ps
 import pymysql
-import PyQt5
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from datetime import datetime, date
+from operator import itemgetter
+
 app = QtWidgets.QApplication(sys.argv)
 
 class BDprescricao(object):
@@ -93,9 +94,9 @@ class BDitem(object):
         self.cursor.execute("UPDATE item SET fornecedor = %s WHERE lote = %s", dados)
         self.db.commit()
 
-    def atualizaPesoItem(self,peso,lote):
-        dados = (peso, lote)
-        self.cursor.execute("UPDATE item SET peso = %s WHERE lote = %s", dados)
+    def atualizadosagemItem(self,dosagem,lote):
+        dados = (dosagem, lote)
+        self.cursor.execute("UPDATE item SET dosagem = %s WHERE lote = %s", dados)
         self.db.commit()
 
     def atualizaUnidadeItem(self,unidade, lote):
@@ -160,11 +161,11 @@ class BDitem(object):
         dataVenc = self.cursor.fetchall()
         return dataVenc
 
-    def recuperaPeso(self, loteNome):
+    def recuperadosagem(self, loteNome):
         dados = (loteNome, loteNome)
-        self.cursor.execute("SELECT peso FROM item WHERE lote = %s OR nome LIKE %s", dados)
-        peso = self.cursor.fetchall()
-        return peso
+        self.cursor.execute("SELECT dosagem FROM item WHERE lote = %s OR nome LIKE %s", dados)
+        dosagem = self.cursor.fetchall()
+        return dosagem
 
     def recuperaUnidade(self, loteNome):
         dados = (loteNome, loteNome)
@@ -208,7 +209,7 @@ class BDitem(object):
         return item
 
     def recuperaitemBD_SP(self):
-        self.cursor.execute("SELECT * FROM item")
+        self.cursor.execute("SELECT * FROM item WHERE qtdItem > 0")
         dado = self.cursor.fetchall()
         self.db.close()
         return dado
@@ -542,7 +543,7 @@ class Item(object):
         self.nomeFabricante = ""
         self.lote = ""
         self.nomeFornecedor  = ""
-        self.peso = ""
+        self.dosagem = ""
         self.unidade = ""
         self.dataVenc = ""
         self.excluido = ""
@@ -567,8 +568,8 @@ class Item(object):
     def setNomeFabricante(self,nomeFabricante):
         self.nomeFabricante = nomeFabricante
 
-    def setPesoItem(self,peso):
-        self.peso = peso
+    def setdosagemItem(self,dosagem):
+        self.dosagem = dosagem
 
     def setUnidadeItem(self,unidade):
         self.unidade = unidade
@@ -589,8 +590,8 @@ class Item(object):
     def getNomeFabricante(self):
         return self.nomeFabricante
 
-    def getPesoItem(self):
-        return self.peso
+    def getdosagemItem(self):
+        return self.dosagem
 
     def getUnidadeItem(self):
         return self.unidade
@@ -635,7 +636,7 @@ class Item(object):
         self.qtdItem = bdItem.recuperaQtd(loteNome)
         self.qtdMinima = bdItem.recuperaQtdMinima(loteNome)
         self.dataVenc = bdItem.recuperaDataVenc(loteNome)
-        self.peso = bdItem.recuperaPeso(loteNome)
+        self.dosagem = bdItem.recuperadosagem(loteNome)
         self.unidade = bdItem.recuperaUnidade(loteNome)
         self.nomeFabricante = bdItem.recuperaFabricante(loteNome)
         self.nomeFornecedor = bdItem.recuperaFornecedor(loteNome)
@@ -649,7 +650,7 @@ class Item(object):
         bdItem.insereItem(self.nome, self.lote, self.dataVenc, self.qtdItem, self.qtdMinima)#Insere valores nao nulos
         bdItem.atualizaNomeFabricanteItem(self.nomeFabricante, self.lote)
         bdItem.atualizaNomefornecedor(self.nomeFornecedor, self.lote)
-        bdItem.atualizaPesoItem(self.peso, self.lote)
+        bdItem.atualizadosagemItem(self.dosagem, self.lote)
         bdItem.atualizaUnidadeItem(self.unidade, self.lote)
         bdItem.db.close()
 
@@ -662,7 +663,7 @@ class Item(object):
         bdItem.atualizaQtdMinimaItem(self.qtdMinima, self.nome)
         bdItem.atualizaNomeFabricanteItem(self.nomeFabricante, self.lote)
         bdItem.atualizaNomefornecedor(self.nomeFornecedor, self.lote)
-        bdItem.atualizaPesoItem(self.peso, self.lote)
+        bdItem.atualizadosagemItem(self.dosagem, self.lote)
         bdItem.atualizaUnidadeItem(self.unidade, self.lote)
         bdItem.db.close()
 
@@ -1167,8 +1168,8 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(18, 35, 55, 16))
-        self.label_Paciente.setObjectName("label_Paciente")
+        self.label_Paciente.setGeometry(QtCore.QRect(35, 35, 30, 16))
+        self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Retirar = QtWidgets.QPushButton(Form)
         self.pushButton_Retirar.setGeometry(QtCore.QRect(460, 180, 93, 28))
@@ -1231,7 +1232,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_nomePac.setReadOnly(True)
         self.line_nomePac.setMaxLength(15)
         self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
-        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 285, 187, 30))
         self.line_sobrenomePac.setObjectName("line_sobrenomePac")
         self.line_sobrenomePac.setReadOnly(True)
         self.line_sobrenomePac.setMaxLength(40)
@@ -1357,70 +1358,70 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1.setFont(fontMed)
         self.line_med1.setMaxLength(30)
         self.line_med1.setObjectName("line_med1")
-        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1))
+        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1))
         self.gridLayout.addWidget(self.line_med1, 0, 0, 1, 1)
 
         self.line_med1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_2.setFont(fontMed)
         self.line_med1_2.setMaxLength(30)
         self.line_med1_2.setObjectName("line_med1_2")
-        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_2))
+        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_2))
         self.gridLayout.addWidget(self.line_med1_2, 1, 0, 1, 1)
 
         self.line_med1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_3.setFont(fontMed)
         self.line_med1_3.setMaxLength(30)
         self.line_med1_3.setObjectName("line_med1_3")
-        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_3))
+        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_3))
         self.gridLayout.addWidget(self.line_med1_3, 2, 0, 1, 1)
 
         self.line_med1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_4.setFont(fontMed)
         self.line_med1_4.setMaxLength(30)
         self.line_med1_4.setObjectName("line_med1_4")
-        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_4))
+        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_4))
         self.gridLayout.addWidget(self.line_med1_4, 3, 0, 1, 1)
 
         self.line_med1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_5.setFont(fontMed)
         self.line_med1_5.setMaxLength(30)
         self.line_med1_5.setObjectName("line_med1_5")
-        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_5))
+        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_5))
         self.gridLayout.addWidget(self.line_med1_5, 4, 0, 1, 1)
 
         self.line_med1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_6.setFont(fontMed)
         self.line_med1_6.setMaxLength(30)
         self.line_med1_6.setObjectName("line_med1_6")
-        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_6))
+        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_6))
         self.gridLayout.addWidget(self.line_med1_6, 5, 0, 1, 1)
 
         self.line_med1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_7.setFont(fontMed)
         self.line_med1_7.setMaxLength(30)
         self.line_med1_7.setObjectName("line_med1_7")
-        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_7))
+        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_7))
         self.gridLayout.addWidget(self.line_med1_7, 6, 0, 1, 1)
 
         self.line_med1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_8.setFont(fontMed)
         self.line_med1_8.setMaxLength(30)
         self.line_med1_8.setObjectName("line_med1_8")
-        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_8))
+        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_8))
         self.gridLayout.addWidget(self.line_med1_8, 7, 0, 1, 1)
 
         self.line_med1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_9.setFont(fontMed)
         self.line_med1_9.setMaxLength(30)
         self.line_med1_9.setObjectName("line_med1_9")
-        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_9))
+        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_9))
         self.gridLayout.addWidget(self.line_med1_9, 8, 0, 1, 1)
 
         self.line_med1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_10.setFont(fontMed)
         self.line_med1_10.setMaxLength(30)
         self.line_med1_10.setObjectName("line_med1_10")
-        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_10))
+        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_10))
         self.gridLayout.addWidget(self.line_med1_10, 9, 0, 1, 1)
 
         self.line_med1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1428,7 +1429,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_11.setFont(fontMed)
         self.line_med1_11.setMaxLength(30)
         self.line_med1_11.setObjectName("line_med1_11")
-        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_11))
+        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_11))
         self.gridLayout.addWidget(self.line_med1_11, 10, 0, 1, 1)
 
         self.line_med1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1436,7 +1437,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_12.setFont(fontMed)
         self.line_med1_12.setMaxLength(30)
         self.line_med1_12.setObjectName("line_med1_12")
-        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_12))
+        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_12))
         self.gridLayout.addWidget(self.line_med1_12, 11, 0, 1, 1)
 
         self.line_med1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1444,7 +1445,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_13.setFont(fontMed)
         self.line_med1_13.setMaxLength(30)
         self.line_med1_13.setObjectName("line_med1_13")
-        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_13))
+        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_13))
         self.gridLayout.addWidget(self.line_med1_13, 12, 0, 1, 1)
 
         self.line_med1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1452,7 +1453,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_14.setFont(fontMed)
         self.line_med1_14.setMaxLength(30)
         self.line_med1_14.setObjectName("line_med1_14")
-        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_14))
+        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_14))
         self.gridLayout.addWidget(self.line_med1_14, 13, 0, 1, 1)
 
         self.line_med1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1460,7 +1461,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_med1_15.setEnabled(True)
         self.line_med1_15.setMaxLength(30)
         self.line_med1_15.setObjectName("line_med1_15")
-        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_15))
+        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_15))
         self.gridLayout.addWidget(self.line_med1_15, 14, 0, 1, 1)
 
         self.line_qtd1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -1790,12 +1791,12 @@ class BaixaItem(QtWidgets.QWidget):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Baixa do estoque por paciente"))
+        Form.setWindowTitle(_translate("Form", "Baixa do restoque por paciente"))
         Form.setToolTip(_translate("Form", "Adicionar mais campos"))
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
-        self.label_Paciente.setText(_translate("Form", "Paciente: "))
+        self.label_Paciente.setText(_translate("Form", "CPF: "))
         self.line_cpfPac.setToolTip(_translate("Form", "informe o cpf da paciente que deseja ver a prescrição"))
         self.line_cpfPac.setPlaceholderText("informe o cpf do paciente")
         self.pushButton_Retirar.setToolTip(_translate("Form", "Retira pela prescrição do paciente"))
@@ -2540,8 +2541,8 @@ class BaixaItem(QtWidgets.QWidget):
     	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.line_nomePac.setText(paciente.getPaciente()[0][1].upper())
-            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].upper())
+            self.line_nomePac.setText(paciente.getPaciente()[0][1].title())
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].title())
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
@@ -2583,7 +2584,7 @@ class TelaPrescricao(QtWidgets.QWidget):
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
-        self.fontLabel.setPointSize(12)
+        self.fontLabel.setPointSize(10)
         self.fontLabel.setBold(True)
         self.fontLabel.setWeight(75)
 
@@ -2598,8 +2599,8 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(16, 35, 55, 16))
-        self.label_Paciente.setObjectName("label_Paciente")
+        self.label_Paciente.setGeometry(QtCore.QRect(30, 35, 20, 16))
+        self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Salvar = QtWidgets.QPushButton(Form)
         self.pushButton_Salvar.setGeometry(QtCore.QRect(460, 180, 93, 28))
@@ -2615,7 +2616,7 @@ class TelaPrescricao(QtWidgets.QWidget):
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setFont(self.fontLabel)
-        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 400, 21))
+        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 450, 21))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
@@ -2632,7 +2633,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_nomePac.setMaxLength(15)
 
         self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
-        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 280, 187, 30))
+        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 285, 187, 30))
         self.line_sobrenomePac.setObjectName("line_sobrenomePac")
         self.line_sobrenomePac.setReadOnly(True)
         self.line_sobrenomePac.setMaxLength(40)
@@ -2671,70 +2672,70 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1.setFont(fontMed)
         self.line_med1.setMaxLength(30)
         self.line_med1.setObjectName("line_med1")
-        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1))
+        self.line_med1.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1))
         self.gridLayout.addWidget(self.line_med1, 0, 0, 1, 1)
 
         self.line_med1_2 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_2.setFont(fontMed)
         self.line_med1_2.setMaxLength(30)
         self.line_med1_2.setObjectName("line_med1_2")
-        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_2))
+        self.line_med1_2.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_2))
         self.gridLayout.addWidget(self.line_med1_2, 1, 0, 1, 1)
 
         self.line_med1_3 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_3.setFont(fontMed)
         self.line_med1_3.setMaxLength(30)
         self.line_med1_3.setObjectName("line_med1_3")
-        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_3))
+        self.line_med1_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_3))
         self.gridLayout.addWidget(self.line_med1_3, 2, 0, 1, 1)
 
         self.line_med1_4 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_4.setFont(fontMed)
         self.line_med1_4.setMaxLength(30)
         self.line_med1_4.setObjectName("line_med1_4")
-        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_4))
+        self.line_med1_4.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_4))
         self.gridLayout.addWidget(self.line_med1_4, 3, 0, 1, 1)
 
         self.line_med1_5 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_5.setFont(fontMed)
         self.line_med1_5.setMaxLength(30)
         self.line_med1_5.setObjectName("line_med1_5")
-        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_5))
+        self.line_med1_5.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_5))
         self.gridLayout.addWidget(self.line_med1_5, 4, 0, 1, 1)
 
         self.line_med1_6 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_6.setFont(fontMed)
         self.line_med1_6.setMaxLength(30)
         self.line_med1_6.setObjectName("line_med1_6")
-        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_6))
+        self.line_med1_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_6))
         self.gridLayout.addWidget(self.line_med1_6, 5, 0, 1, 1)
 
         self.line_med1_7 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_7.setFont(fontMed)
         self.line_med1_7.setMaxLength(30)
         self.line_med1_7.setObjectName("line_med1_7")
-        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_7))
+        self.line_med1_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_7))
         self.gridLayout.addWidget(self.line_med1_7, 6, 0, 1, 1)
 
         self.line_med1_8 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_8.setFont(fontMed)
         self.line_med1_8.setMaxLength(30)
         self.line_med1_8.setObjectName("line_med1_8")
-        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_8))
+        self.line_med1_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_8))
         self.gridLayout.addWidget(self.line_med1_8, 7, 0, 1, 1)
 
         self.line_med1_9 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_9.setFont(fontMed)
         self.line_med1_9.setMaxLength(30)
         self.line_med1_9.setObjectName("line_med1_9")
-        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_9))
+        self.line_med1_9.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_9))
         self.gridLayout.addWidget(self.line_med1_9, 8, 0, 1, 1)
 
         self.line_med1_10 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1_10.setFont(fontMed)
         self.line_med1_10.setMaxLength(30)
         self.line_med1_10.setObjectName("line_med1_10")
-        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_10))
+        self.line_med1_10.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_10))
         self.gridLayout.addWidget(self.line_med1_10, 9, 0, 1, 1)
 
         self.line_med1_11 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2742,7 +2743,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1_11.setFont(fontMed)
         self.line_med1_11.setMaxLength(30)
         self.line_med1_11.setObjectName("line_med1_11")
-        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_11))
+        self.line_med1_11.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_11))
         self.gridLayout.addWidget(self.line_med1_11, 10, 0, 1, 1)
 
         self.line_med1_12 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2750,7 +2751,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1_12.setFont(fontMed)
         self.line_med1_12.setMaxLength(30)
         self.line_med1_12.setObjectName("line_med1_12")
-        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_12))
+        self.line_med1_12.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_12))
         self.gridLayout.addWidget(self.line_med1_12, 11, 0, 1, 1)
 
         self.line_med1_13 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2758,7 +2759,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1_13.setFont(fontMed)
         self.line_med1_13.setMaxLength(30)
         self.line_med1_13.setObjectName("line_med1_13")
-        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_13))
+        self.line_med1_13.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_13))
         self.gridLayout.addWidget(self.line_med1_13, 12, 0, 1, 1)
 
         self.line_med1_14 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2766,7 +2767,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1_14.setFont(fontMed)
         self.line_med1_14.setMaxLength(30)
         self.line_med1_14.setObjectName("line_med1_14")
-        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_14))
+        self.line_med1_14.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_14))
         self.gridLayout.addWidget(self.line_med1_14, 13, 0, 1, 1)
 
         self.line_med1_15 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2774,7 +2775,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_med1_15.setEnabled(True)
         self.line_med1_15.setMaxLength(30)
         self.line_med1_15.setObjectName("line_med1_15")
-        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.line_med1_15))
+        self.line_med1_15.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.line_med1_15))
         self.gridLayout.addWidget(self.line_med1_15, 14, 0, 1, 1)
 
         self.line_qtd1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
@@ -2998,7 +2999,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
         self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
         self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
-        self.pushButton_Salvar.clicked.connect(self.mensagem)
+        #self.pushButton_Salvar.clicked.connect(self.mensagem)
 
         QtCore.QMetaObject.connectSlotsByName(Form)
         Form.setTabOrder(self.line_cpfPac, self.line_med1)
@@ -3059,7 +3060,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
-        self.label_Paciente.setText(_translate("Form", "Paciente: "))
+        self.label_Paciente.setText(_translate("Form", "CPF: "))
         self.line_cpfPac.setToolTip(_translate("Form", "Digite o cpf da paciente"))
         self.pushButton_Salvar.setToolTip(_translate("Form", "Salva a prescrição do paciente"))
         self.pushButton_Salvar.setText(_translate("Form", "Salvar"))
@@ -3461,15 +3462,19 @@ class TelaPrescricao(QtWidgets.QWidget):
                             self.prescricao.setQtdAdm(self.vetMed[indice][1])
                             self.prescricao.setFazUso(self.vetMed[indice][2])
                             self.prescricao.atualizaPrescricao()
+                            Mensagem.msg="Prescricao atualizada com sucesso!"
+                            Mensagem.cor="black"
+                            Mensagem.img=1
                     else:
                         self.prescricao.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
                         self.prescricao.setNomeItem(self.vetMed[indice][0])
                         self.prescricao.setQtdAdm(self.vetMed[indice][1])
                         self.prescricao.setFazUso(self.vetMed[indice][2])
                         self.prescricao.gravaBDprescricao(paciente.getPaciente()[0][0])
-                Mensagem.msg="Prescricao salva com sucesso!"
-                Mensagem.cor="black"
-                Mensagem.img=1
+                        Mensagem.msg="Prescricao salva com sucesso!"
+                        Mensagem.cor="black"
+                        Mensagem.img=1
+                self.mensagem()
                 self.line_cpfPac.clear()
                 self.limparCampos()
             else:
@@ -3488,8 +3493,8 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.prescricao.recuperaBDprescricao()
             self.preencheCampos(self.prescricao.getPrescricao())
             print(paciente.getPaciente())
-            self.line_nomePac.setText(paciente.getPaciente()[0][1])
-            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2])
+            self.line_nomePac.setText(paciente.getPaciente()[0][1].title())
+            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].title())
 
         elif self.line_cpfPac.text() != '':
             self.label_Erro.setText("Paciente não cadastrado")
@@ -3569,8 +3574,8 @@ class Ui_FormCadProdEMed(object):
 
         self.lineEdit_7 = QtWidgets.QLineEdit(Form)
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
-        self.lineEdit_7.setObjectName("Peso")
-        self.lineEdit_7.setPlaceholderText("Digite o peso")
+        self.lineEdit_7.setObjectName("Dose")
+        self.lineEdit_7.setPlaceholderText("Digite a dosagem")
         self.lineEdit_7.setToolTip("Gramagem específica do medicamento (Ex: 155.55)")
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
 
@@ -3579,7 +3584,7 @@ class Ui_FormCadProdEMed(object):
         self.lineEdit_8.setObjectName("unidade")
         self.lineEdit_8.setPlaceholderText("Digite a unidade")
         self.lineEdit_8.setMaxLength(30)
-        self.lineEdit_8.setToolTip("Unidade do peso especificado \nEx. (mg, mg/ml, ml)")
+        self.lineEdit_8.setToolTip("Unidade da dosagem especificado \nEx. (mg, mg/ml, ml)")
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
 
         self.labelErro = QtWidgets.QLabel(Form)
@@ -3619,7 +3624,7 @@ class Ui_FormCadProdEMed(object):
 
         self.label_10 = QtWidgets.QLabel(Form)
         self.label_10.setGeometry(QtCore.QRect(370, 100, 40, 20))
-        self.label_10.setObjectName("Peso")
+        self.label_10.setObjectName("Dose")
 
         self.label_11 = QtWidgets.QLabel(Form)
         self.label_11.setGeometry(QtCore.QRect(360, 130, 40, 20))
@@ -3695,7 +3700,7 @@ class Ui_FormCadProdEMed(object):
         self.label_7.setText(_translate("Form", "Fabricante"))
         self.label_8.setText(_translate("Form", "QtdMinima*"))
         self.label_9.setText(_translate("Form", "Nome Fornecedor"))
-        self.label_10.setText(_translate("Form", "Peso"))
+        self.label_10.setText(_translate("Form", "Dose"))
         self.label_11.setText(_translate("Form", "Unidade"))
         self.pushButton.setText(_translate("Form", "Cadastrar"))
         self.pushButton_2.setText(_translate("Form", "Limpar"))
@@ -3722,7 +3727,7 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
         lote = self.lineEdit_5.text()
         qtdMinima = self.lineEdit_4.text()
         nomeFornecedor = self.lineEdit_6.text()
-        peso = self.lineEdit_7.text()
+        dosagem = self.lineEdit_7.text()
         unidade = self.lineEdit_8.text()
         dataVenc = QtWidgets.QDateTimeEdit.date(self.dateEdit)
         dataVenc = dataVenc.toPyDate()
@@ -3742,7 +3747,7 @@ class CadastroProdEMed(QtWidgets.QWidget, Ui_FormCadProdEMed):
                     item.setQtdItem(quantidade)
                     item.setQtdMinima(qtdMinima)
                     item.setNomeFabricante(fabricante)
-                    item.setPesoItem(peso)
+                    item.setdosagemItem(dosagem)
                     item.setUnidadeItem(unidade)
                     item.setNomeFornecedor(nomeFornecedor)
                     #Salva os atributos no banco
@@ -4181,7 +4186,7 @@ class Ui_Form_EditProdMed(object):
         self.tabela = QtWidgets.QTableWidget(Form)
         self.tabela.setGeometry(QtCore.QRect(50, 90, 600, 146))
         self.tabela.setColumnCount(10)     #Set dez columns
-        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante","Fornecedor"])
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante","Fornecedor"])
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -4215,7 +4220,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
     def limparTela(self):
         self.label_3.clear()
         self.tabela.clear()
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.label_5.clear()
         self.label_6.clear()
         self.pushButton.setVisible(False)
@@ -4243,7 +4248,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
                     self.label_6.setText("Vencidos: "+str(self.calculaVencidos()))
             else:
                 self.msgErro()
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])
 
     def calculaQuantidade(self):
         soma = 0
@@ -4273,7 +4278,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
             self.tabela.insertRow(num_linha)
             if dados[num_linha][10] == 0 and dados[num_linha][3] > 0:  # preenche tabela se nao estiver vencido e se não estiver zerado
                 for num_coluna, dado in enumerate(linha_dado):
-                    self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).title()))#Usando função upper() para deixar a tabela maiuscula
             else:
                 self.tabela.hideRow(num_linha)
 
@@ -4288,7 +4293,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
             else:
                 dataVenc = dados[linha][5].strftime('%d/%m/%Y')
                 self.tabela.setItem(linha, 5, self.formatCell(dataVenc))
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.tabela.resizeColumnsToContents()
         self.tabela.resizeRowsToContents()
         for pos in range(10):
@@ -4302,7 +4307,7 @@ class EditarProdEMed(QtWidgets.QWidget, Ui_Form_EditProdMed):
 
     def msgErro(self):
         self.tabela.clear()
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])
         self.label_3.setText("LOTE NÃO CADASTRADO!")
 
 #==============================================================================================================
@@ -4331,7 +4336,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setGeometry(QtCore.QRect(160, 40, 381, 22))
         self.lineEdit.setObjectName("Nome")
-        self.lineEdit.setText(item.getNomeItem()[0][0])
+        self.lineEdit.setText(item.getNomeItem()[0][0].title())
         self.lineEdit.setFont(self.fontCampos)
         self.lineEdit.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9]+"), self.lineEdit))
         self.lineEdit.setToolTip("Nome do item")
@@ -4364,7 +4369,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_6 = QtWidgets.QLineEdit(Form)
         self.lineEdit_6.setGeometry(QtCore.QRect(160, 160, 131, 22))
         self.lineEdit_6.setObjectName("Nome Fornecedor")
-        self.lineEdit_6.setText(item.getNomeFornecedor()[0][0])
+        self.lineEdit_6.setText(item.getNomeFornecedor()[0][0].title())
         self.lineEdit_6.setFont(self.fontCampos)
         self.lineEdit_6.setMaxLength(20)
         self.lineEdit_6.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z0-9 ]+"), self.lineEdit_6))
@@ -4373,7 +4378,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.lineEdit_3 = QtWidgets.QLineEdit(Form)
         self.lineEdit_3.setGeometry(QtCore.QRect(410, 70, 131, 22))
         self.lineEdit_3.setObjectName("Fabricante")
-        self.lineEdit_3.setText(item.getNomeFabricante()[0][0])
+        self.lineEdit_3.setText(item.getNomeFabricante()[0][0].title())
         self.lineEdit_3.setFont(self.fontCampos)
         self.lineEdit_3.setMaxLength(30)
         self.lineEdit_3.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z ]+"), self.lineEdit_3))
@@ -4381,16 +4386,16 @@ class Ui_Form_EditProdMedInfo(object):
 
         self.lineEdit_7 = QtWidgets.QLineEdit(Form)
         self.lineEdit_7.setGeometry(QtCore.QRect(410, 100, 131, 22))
-        self.lineEdit_7.setObjectName("Peso")
-        self.lineEdit_7.setText(str(item.getPesoItem()[0][0]))
+        self.lineEdit_7.setObjectName("Dose")
+        self.lineEdit_7.setText(str(item.getdosagemItem()[0][0]))
         self.lineEdit_7.setFont(self.fontCampos)
         self.lineEdit_7.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+[.][0-9][0-9]"), self.lineEdit_7))
-        self.lineEdit_7.setToolTip("Peso do item, somente os numeros\nEX:125.00")
+        self.lineEdit_7.setToolTip("dosagem do item, somente os numeros\nEX:125.00")
 
         self.lineEdit_8 = QtWidgets.QLineEdit(Form)
         self.lineEdit_8.setGeometry(QtCore.QRect(410, 130, 131, 22))
         self.lineEdit_8.setObjectName("unidade")
-        self.lineEdit_8.setText(item.getUnidadeItem()[0][0])
+        self.lineEdit_8.setText(item.getUnidadeItem()[0][0].lower())
         self.lineEdit_8.setFont(self.fontLabel)
         self.lineEdit_8.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+[/][A-Za-z]+"), self.lineEdit_8))
         self.lineEdit_8.setToolTip("Unidade de medida do item\nEX:mg, ml")
@@ -4431,7 +4436,7 @@ class Ui_Form_EditProdMedInfo(object):
 
         self.label_10 = QtWidgets.QLabel(Form)
         self.label_10.setGeometry(QtCore.QRect(380, 100, 30, 20))
-        self.label_10.setObjectName("Peso")
+        self.label_10.setObjectName("Dose")
 
         self.label_11 = QtWidgets.QLabel(Form)
         self.label_11.setGeometry(QtCore.QRect(367, 130, 40, 20))
@@ -4496,7 +4501,7 @@ class Ui_Form_EditProdMedInfo(object):
         self.label_7.setText(_translate("Form", "Fabricante"))
         self.label_8.setText(_translate("Form", "QtdMinima*"))
         self.label_9.setText(_translate("Form", "Nome Fornecedor"))
-        self.label_10.setText(_translate("Form", "Peso"))
+        self.label_10.setText(_translate("Form", "Dose"))
         self.label_11.setText(_translate("Form", "Unidade"))
         self.pushButton_2.setText(_translate("Form", "Salvar"))
         self.pushButton_3.setText(_translate("Form", "Menu principal"))
@@ -4548,7 +4553,7 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
         lote = self.lineEdit_5.text()
         qtdMinima = self.lineEdit_4.text()
         nomeFornecedor = self.lineEdit_6.text()
-        peso = self.lineEdit_7.text()
+        dosagem = self.lineEdit_7.text()
         unidade = self.lineEdit_8.text()
         dataVenc = QtWidgets.QDateTimeEdit.date(self.dateEdit)
         dataVenc = dataVenc.toPyDate()
@@ -4569,7 +4574,7 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
                         item.setQtdItem(quantidade)
                         item.setQtdMinima(qtdMinima)
                         item.setNomeFabricante(fabricante)
-                        item.setPesoItem(peso)
+                        item.setdosagemItem(dosagem)
                         item.setUnidadeItem(unidade)
                         item.setNomeFornecedor(nomeFornecedor)
                         #Salva os atributos no banco
@@ -4589,7 +4594,7 @@ class EditarProdEMedInfo(QtWidgets.QWidget, Ui_Form_EditProdMedInfo):
                     item.setQtdItem(quantidade)
                     item.setQtdMinima(qtdMinima)
                     item.setNomeFabricante(fabricante)
-                    item.setPesoItem(peso)
+                    item.setdosagemItem(dosagem)
                     item.setUnidadeItem(unidade)
                     item.setNomeFornecedor(nomeFornecedor)
                     #Salva os atributos no banco
@@ -4742,18 +4747,28 @@ class EditarPaciente(QtWidgets.QWidget):
             self.tabela.insertRow(num_linha)
             for num_coluna, dado in enumerate(linha_dado):
                 self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado)))
+                if num_coluna == 1 or num_coluna == 2:
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeSobrenome(str(dado).title()))
 
         for linha in range(len(dados)):#Formatação das datas de nascimento
             dataNasc = dados[linha][5].strftime('%d/%m/%Y')
             self.tabela.setItem(linha, 5, self.formatCell(dataNasc))
 
         self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome", "CPF", "RG", "Data Nasc."])
-        self.tabela.resizeColumnsToContents()
-        self.tabela.resizeRowsToContents()
+        
         for pos in range(6):
             self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
 
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+
     def formatCell(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
+        return cellinfo
+
+    def formatCellNomeSobrenome(self, dado):
         cellinfo = QtWidgets.QTableWidgetItem(dado)
         cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         cellinfo.setTextAlignment(QtCore.Qt.AlignLeft)
@@ -4804,7 +4819,7 @@ class UI_Form_EditarPacienteInfo(object):
         self.lineEdit_NomePac.setMaxLength(15)
         self.lineEdit_NomePac.setFont(self.fontCampos)
         self.lineEdit_NomePac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z]+"), self.lineEdit_NomePac))
-        self.lineEdit_NomePac.setText(paciente.getNomePaciente()[0])
+        self.lineEdit_NomePac.setText(paciente.getNomePaciente()[0].title())
 
         self.lineEdit_SobrenomePac = QtWidgets.QLineEdit(Form)
         self.lineEdit_SobrenomePac.setGeometry(QtCore.QRect(240, 10, 200, 22))
@@ -4812,7 +4827,7 @@ class UI_Form_EditarPacienteInfo(object):
         self.lineEdit_SobrenomePac.setMaxLength(40)
         self.lineEdit_SobrenomePac.setFont(self.fontCampos)
         self.lineEdit_SobrenomePac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[A-Za-z ]+"), self.lineEdit_SobrenomePac))
-        self.lineEdit_SobrenomePac.setText(paciente.getSobrenomePaciente()[0])
+        self.lineEdit_SobrenomePac.setText(paciente.getSobrenomePaciente()[0].title())
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setGeometry(QtCore.QRect(30, 110, 371, 131))
@@ -4908,8 +4923,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                         if paciente.validaCPFpaciente(cpf):
                             self.label_Erro.setText("PACIENTE JÁ ESTÁ CADASTRADO!")
                         else:
-                            paciente.setNomePaciente(nome)
-                            paciente.setSobrenomePaciente(sobrenome)
+                            paciente.setNomePaciente(nome.lower())
+                            paciente.setSobrenomePaciente(sobrenome.lower())
                             paciente.setRgPaciente(rg)
                             paciente.setDataNasc(data_nasc)
                             paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
@@ -4918,8 +4933,8 @@ class EditarPacienteInfo(QtWidgets.QWidget, UI_Form_EditarPacienteInfo):
                             Mensagem.img = 1
                             self.switch_window.emit()
                     else:
-                        paciente.setNomePaciente(nome)
-                        paciente.setSobrenomePaciente(sobrenome)
+                        paciente.setNomePaciente(nome.lower())
+                        paciente.setSobrenomePaciente(sobrenome.lower())
                         paciente.setRgPaciente(rg)
                         paciente.setDataNasc(data_nasc)
                         paciente.atualizaBDpaciente(EditarPacienteInfo.cpf)
@@ -5411,10 +5426,22 @@ class Ui_Form_VisualizaPac(object):
         Form.setObjectName("Form")
         Form.setFixedSize(630, 450)
 
+        self.documento = QtGui.QTextDocument()
+
         self.pushButton_4 = QtWidgets.QPushButton(Form)
         self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
         self.pushButton_4.setObjectName("Menu Principal")
 
+        self.pushButton_Pdf = QtWidgets.QPushButton(Form)
+        self.pushButton_Pdf.setGeometry(QtCore.QRect(530, 82, 91, 28))
+        self.pushButton_Pdf.setObjectName("Exportar PDF")
+        self.pushButton_Pdf.clicked.connect(self.printPDF)
+
+        self.pushButton_VisuPDF = QtWidgets.QPushButton(Form)
+        self.pushButton_VisuPDF.setGeometry(QtCore.QRect(530, 115, 91, 28))
+        self.pushButton_VisuPDF.setObjectName("Visualizar PDF")
+        self.pushButton_VisuPDF.clicked.connect(self.vistaPrevia)
+        
         self.tabela = QtWidgets.QTableWidget(Form)
         self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
         self.tabela.setColumnCount(6)     #Set dez columns
@@ -5428,6 +5455,8 @@ class Ui_Form_VisualizaPac(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Visualizar Pacientes"))
         self.pushButton_4.setText(_translate("Form", "Menu principal"))
+        self.pushButton_Pdf.setText(_translate("Form", "Exportar PDF"))
+        self.pushButton_VisuPDF.setText(_translate("Form", "Visualizar PDF"))
 
 class VisualizarPac(QtWidgets.QWidget, Ui_Form_VisualizaPac):
 
@@ -5456,25 +5485,139 @@ class VisualizarPac(QtWidgets.QWidget, Ui_Form_VisualizaPac):
         self.preencheTabela()
         self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
 
-    def preencheTabela(self):
-        dados = self.paciente.getPaciente()
-        self.tabela.setRowCount(0)
-        for num_linha, linha_dado in enumerate(dados):
-            self.tabela.insertRow(num_linha)
-            for num_coluna, dado in enumerate(linha_dado):
-                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
-        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
-        self.tabela.resizeColumnsToContents()
-        self.tabela.resizeRowsToContents()
-        for pos in range(6):
-            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
-
     def formatCell(self, dado):
         cellinfo = QtWidgets.QTableWidgetItem(dado)
         cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
         return cellinfo
 
+    def formatCellNomeSobrenome(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignLeft)
+        return cellinfo
+
+    def preencheTabela(self):
+        self.documento.clear()
+        dados = self.paciente.getPaciente()
+        dados = sorted(dados, key=itemgetter(1))#Ordena pelo nome de cada paciente
+        self.tabela.setRowCount(0)
+
+        for num_linha, linha_dado in enumerate(dados):
+            self.tabela.insertRow(num_linha)
+            for num_coluna, dado in enumerate(linha_dado):
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado)))#Usando função title() para deixar as iniciais maiusculas
+                if num_coluna == 1 or num_coluna == 2:
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeSobrenome(str(dado).title()))
+                if num_coluna == 5:
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeSobrenome(dado.strftime('%d/%m/%Y')))
+
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Sobrenome","CPF", "RG", "Data Nasc"])
+        self.tabela.resizeColumnsToContents()
+        self.tabela.resizeRowsToContents()
+        for pos in range(6):
+            self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+        dadosDOC = ""
+        for num in dados:
+            dadosDOC += "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(num[1].title(),num[2].title(),num[3],num[4],num[5].strftime('%d/%m/%Y'))
+
+        reporteHtml = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+h3 {
+    font-family: Helvetica-Bold;
+    text-align: left;
+   }
+table {
+       font-family: arial, sans-serif;
+       border-collapse: collapse;
+       width: 100%;
+      }
+td {
+    text-align: left;
+    padding-top: 4px;
+    padding-right: 6px;
+    padding-bottom: 2px;
+    padding-left: 6px;
+   }
+th {
+    text-align: left;
+    padding: 4px;
+    background-color: black;
+    color: white;
+   }
+tr:nth-child(even) {
+                    background-color: #dddddd;
+                   }
+</style>
+</head>
+<body>
+<h1>APENENSEL - Associação Das Portadoras de Necessidades Especiais</h3>
+<img src = "img/logo.png" width="95" height="55" align="right"/></br>
+<h2>CNPJ: 15.415.743/0001-08 </h2>
+<h2>Ponta Grossa - """+date.today().strftime("%d/%m/%Y")+"""<br/></h2>
+<h2 align="center">Relação de Pacientes<br/></h2>
+<table align="left" width="100%" cellspacing="0">
+  <tr>
+    <th>NOME</th>
+    <th>SOBRENOME</th>
+    <th>CPF</th>
+    <th>RG</th>
+    <th>DATA NASC.</th>
+  </tr>
+  [DADOS]
+</table>
+</body>
+</html>
+""".replace("[DADOS]", dadosDOC)
+        dados = QtCore.QByteArray()
+        dados.append(str(reporteHtml))
+        codec = QtCore.QTextCodec.codecForHtml(dados)
+        unistr = codec.toUnicode(dados)
+
+        if QtCore.Qt.mightBeRichText(unistr):
+            self.documento.setHtml(unistr)
+        else:
+            self.documento.setPlainText(unistr)
+
+    def vistaPrevia(self):
+        if not self.documento.isEmpty():
+            impressao = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+            
+            vista = QtPrintSupport.QPrintPreviewDialog(impressao, self)
+            vista.setWindowTitle("Visualizar PDF")
+            vista.setWindowFlags(QtCore.Qt.Window)
+            vista.resize(800, 600)
+
+            exportarPDF = vista.findChildren(QtWidgets.QToolBar)
+            exportarPDF[0].addAction(QtGui.QIcon("img/exportarPDF.png"), "Exportar PDF", self.printPDF)
+            
+            vista.paintRequested.connect(self.vistaPreviaImpressao)
+            vista.exec_()
+        else:
+            QtWidgets.QMessageBox.critical(self, "Vista previa", "Não há dados para visualizar.   ",
+                                 QtWidgets.QMessageBox.Ok)
+
+    def vistaPreviaImpressao(self, impressao):
+        self.documento.print_(impressao)
+
+    def printPDF(self):
+        if not self.documento.isEmpty():
+            fn, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Exportar PDF', 'Relação de Pacientes.pdf', 'PDF Files(.pdf);;All Files()')
+            if fn:
+                #if QtCore.QFileInfo(fn).suffix() == '': 
+                #    fn += '.pdf'
+                printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+                printer.setOutputFormat(QtPrintSupport.QPrinter.PdfFormat)
+                printer.setOutputFileName(fn)
+                self.documento.print_(printer)
+
+                QtWidgets.QMessageBox.information(self, "Exportar o PDF", "Dados exportados com sucesso.   ",
+                                        QtWidgets.QMessageBox.Ok)
 #=========================================================================================================================
 
 class Ui_Form_VisualizaEst(object):
@@ -5487,11 +5630,22 @@ class Ui_Form_VisualizaEst(object):
         self.pushButton_4 = QtWidgets.QPushButton(Form)
         self.pushButton_4.setGeometry(QtCore.QRect(530, 50, 91, 28))
         self.pushButton_4.setObjectName("Menu Principal")
+        self.pushButton_Pdf = QtWidgets.QPushButton(Form)
+        self.pushButton_Pdf.setGeometry(QtCore.QRect(530, 82, 91, 28))
+        self.pushButton_Pdf.setObjectName("Exportar PDF")
+        self.pushButton_Pdf.clicked.connect(self.printPDF)
+
+        self.pushButton_VisuPDF = QtWidgets.QPushButton(Form)
+        self.pushButton_VisuPDF.setGeometry(QtCore.QRect(530, 115, 91, 28))
+        self.pushButton_VisuPDF.setObjectName("Visualizar PDF")
+        self.pushButton_VisuPDF.clicked.connect(self.vistaPrevia)
+
+        self.documento = QtGui.QTextDocument()
 
         self.tabela = QtWidgets.QTableWidget(Form)
         self.tabela.setGeometry(QtCore.QRect(30, 30, 490, 400))
         self.tabela.setColumnCount(10)     #Set dez columns
-        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Dose", "Unidade", "Fabricante", "Fornecedor"])
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -5501,6 +5655,8 @@ class Ui_Form_VisualizaEst(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Visualizar Estoque"))
         self.pushButton_4.setText(_translate("Form", "Menu principal"))
+        self.pushButton_Pdf.setText(_translate("Form", "Exportar PDF"))
+        self.pushButton_VisuPDF.setText(_translate("Form", "Visualizar PDF"))
 
 class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
 
@@ -5518,7 +5674,7 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
 
     def limparTela(self):
     	self.tabela.clear()
-    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+    	self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Dose", "Unidade", "Fabricante", "Fornecedor"])
 
     def TelaMenuPrincipal(self):
         self.switch_window.emit()
@@ -5526,29 +5682,146 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
     def buscarItem1(self):
         self.item.recuperaItemBDSP()
         self.preencheTabela()
-        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Peso", "Unidade", "Fabricante", "Fornecedor"])
+        self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Dose", "Unidade", "Fabricante", "Fornecedor"])
 
     def preencheTabela(self):
         dados = self.item.recuperaItemBDSP()
-        print("dados")
-        print(dados)
+        dados = sorted(dados, key=itemgetter(1))
         self.tabela.setRowCount(0)
         for num_linha, linha_dado in enumerate(dados):
             self.tabela.insertRow(num_linha)
             for num_coluna, dado in enumerate(linha_dado):
-                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).upper()))#Usando função upper() para deixar a tabela maiuscula
+                self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).title()))#Usando função upper() para deixar a tabela maiuscula
+                if num_coluna == 1 or num_coluna == 8 or num_coluna == 9:
+                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).title()))
+                if num_coluna == 7:
+                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).lower()))
+                if num_coluna == 5:
+                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(dado.strftime('%d/%m/%Y')))
 
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.tabela.resizeColumnsToContents()
         self.tabela.resizeRowsToContents()
         for pos in range(10):
             self.tabela.horizontalHeaderItem(pos).setTextAlignment(QtCore.Qt.AlignVCenter)
+
+
+        dadosDOC = ""
+        for num in dados:
+            dadosDOC += "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(num[1].title(),num[2],num[3],num[4],num[5].strftime('%d/%m/%Y'),num[6],num[7],num[8].title(),num[9].title())
+        
+        reporteHtml = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+h3 {
+    font-family: Helvetica-Bold;
+    text-align: left;
+   }
+table {
+       font-family: arial, sans-serif;
+       border-collapse: collapse;
+       width: 100%;
+      }
+td {
+    text-align: left;
+    padding-top: 4px;
+    padding-right: 6px;
+    padding-bottom: 2px;
+    padding-left: 6px;
+   }
+th {
+    text-align: left;
+    padding: 4px;
+    background-color: black;
+    color: white;
+   }
+tr:nth-child(even) {
+                    background-color: #dddddd;
+                   }
+</style>
+</head>
+<body>
+<h1>APENENSEL - Associação Das Portadoras de Necessidades Especiais</h1>
+<img src = "img/logo.png" width="95" height="55" align="right"/></br>
+<h2>CNPJ: 15.415.743/0001-08 </h2>
+<h2>Ponta Grossa - """+date.today().strftime("%d/%m/%Y")+"""<br/></h2>
+<h2 align="center">Relação de Itens em Estoque<br/></h2>
+<table align="left" width="100%" cellspacing="0">
+  <tr>
+    <th>NOME</th>
+    <th>LOTE</th>
+    <th>QUANTIDADE</th>
+    <th>QTD. MINIMA</th>
+    <th>VENCIMENTO</th>
+    <th>DOSE</th>
+    <th>UNID.</th>
+    <th>FABRICANTE</th>
+    <th>FORNECEDOR</th>
+  </tr>
+  [DADOS]
+</table>
+</body>
+</html>
+""".replace("[DADOS]", dadosDOC)
+        dados = QtCore.QByteArray()
+        dados.append(str(reporteHtml))
+        codec = QtCore.QTextCodec.codecForHtml(dados)
+        unistr = codec.toUnicode(dados)
+
+        if QtCore.Qt.mightBeRichText(unistr):
+            self.documento.setHtml(unistr)
+        else:
+            self.documento.setPlainText(unistr)
 
     def formatCell(self, dado):
         cellinfo = QtWidgets.QTableWidgetItem(dado)
         cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
         cellinfo.setTextAlignment(QtCore.Qt.AlignRight)
         return cellinfo
+
+    def formatCellNomeItem(self, dado):
+        cellinfo = QtWidgets.QTableWidgetItem(dado)
+        cellinfo.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+        cellinfo.setTextAlignment(QtCore.Qt.AlignLeft)
+        return cellinfo
+
+    def vistaPrevia(self):
+        if not self.documento.isEmpty():
+            impressao = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+            
+            vista = QtPrintSupport.QPrintPreviewDialog(impressao, self)
+            vista.setWindowTitle("Visualizar PDF")
+            vista.setWindowFlags(QtCore.Qt.Window)
+            vista.resize(800, 600)
+
+            exportarPDF = vista.findChildren(QtWidgets.QToolBar)
+            exportarPDF[0].addAction(QtGui.QIcon("img/exportarPDF.png"), "Exportar PDF", self.printPDF)
+            
+            vista.paintRequested.connect(self.vistaPreviaImpressao)
+            vista.exec_()
+        else:
+            QtWidgets.QMessageBox.critical(self, "Vista previa", "Não há dados para visualizar.   ",
+                                 QtWidgets.QMessageBox.Ok)
+
+    def vistaPreviaImpressao(self, impressao):
+        self.documento.print_(impressao)
+
+    def printPDF(self):
+        if not self.documento.isEmpty():
+            fn, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Exportar PDF', "Relação de Itens.pdf", 'PDF Files(.pdf);;All Files()')
+            if fn:
+                #if QtCore.QFileInfo(fn).suffix() == '': 
+                #    fn += '.pdf'
+                printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
+                printer.setOutputFormat(QtPrintSupport.QPrinter.PdfFormat)
+                printer.setOutputFileName(fn)
+                self.documento.print_(printer)
+
+                QtWidgets.QMessageBox.information(self, "Exportar a PDF", "Datos exportados com sucesso.   ",
+                                        QtWidgets.QMessageBox.Ok)
 
 #=======================================================================================================
 class Ui_BaixaManual(object):
@@ -5600,7 +5873,7 @@ class Ui_BaixaManual(object):
         self.tabela.setGeometry(QtCore.QRect(40, 250,500, 146))
         self.tabela.setColumnCount(10)  # Set dez columns
         self.tabela.setHorizontalHeaderLabels(
-            ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Peso", "Unid", "Fabricante", "Fornecedor"])
+            ["ID", "Nome", "Lote", "Quantidade", "QtdMinima", "Vencimento", "Dose", "Unid", "Fabricante", "Fornecedor"])
         self.tabela.resizeColumnsToContents()
         self.tabela.resizeRowsToContents()
 #============================
@@ -5614,7 +5887,7 @@ class Ui_BaixaManual(object):
         self.lineEdit_Nome.setToolTip("Digite o nome ou lote do item à ser retirado")
         self.lineEdit_Nome.setPlaceholderText("Digite o nome ou lote do item")
         self.lineEdit_Nome.setFont(self.fontCampos)
-        self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9]+"), self.lineEdit_Nome))
+        self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9 ]+"), self.lineEdit_Nome))
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setGeometry(QtCore.QRect(30, 130, 340, 20))
@@ -5681,7 +5954,7 @@ class BaixaManual(QtWidgets.QWidget, Ui_BaixaManual):
         self.lineEdit_Qtd.setVisible(False)
         self.label_qtd.setVisible(False)
         self.tabela.clear()
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.lineEdit_Nome.clear()
         self.lineEdit_Qtd.clear()
         self.pushButton_retirar.setVisible(False)
@@ -5735,7 +6008,7 @@ class BaixaManual(QtWidgets.QWidget, Ui_BaixaManual):
             else:
                 dataVenc = dados[linha][5].strftime('%d/%m/%Y')
                 self.tabela.setItem(linha, 5, self.formatCell(dataVenc))
-        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Peso", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
+        self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.tabela.resizeColumnsToContents()
         self.tabela.resizeRowsToContents()
         for pos in range(10):

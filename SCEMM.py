@@ -1170,7 +1170,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(35, 10, 30, 16))
+        self.label_Paciente.setGeometry(QtCore.QRect(35, 12, 30, 16))
         self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Retirar = QtWidgets.QPushButton(Form)
@@ -1226,6 +1226,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_NomePac.setGeometry(QtCore.QRect(25, 40, 35, 16))
         self.label_NomePac.setObjectName("label_NomePac")
         self.label_NomePac.setVisible(False)
+
 
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
         self.line_cpfPac.setGeometry(QtCore.QRect(70, 10, 301, 26))
@@ -1729,6 +1730,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_RetirarRestante.clicked.connect(self.copiarCampos)
         self.pushButton_RetirarRestante.clicked.connect(self.retirarRestante)
         self.pushButton_Limpar.clicked.connect(self.limparLotes)
+        self.pushButton_Limpar.clicked.connect(self.limparCampos)
         self.pushButton_Buscar.clicked.connect(self.line_cpfPac.copy)
         self.pushButton_Buscar.clicked.connect(self.buscarPrescricao)
         self.pushButton_MenuPrin.clicked.connect(self.menuPrincipal)
@@ -1802,7 +1804,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_Retirar.setText(_translate("Form", "Retirar"))
         self.pushButton_Retirar.setShortcut(_translate("Form", "Ctrl+S"))
         self.pushButton_RetirarRestante.setToolTip(_translate("Form", "Retira pela saida do paciente"))
-        self.pushButton_RetirarRestante.setText(_translate("Form", "Retirar restante"))
+        self.pushButton_RetirarRestante.setText(_translate("Form", "Retirar"))
         self.pushButton_RetirarRestante.setShortcut(_translate("Form", "Ctrl+S"))
         self.pushButton_Buscar.setToolTip(_translate("Form", "Busca a prescrição do paciente"))
         self.pushButton_Buscar.setText(_translate("Form", "Buscar"))
@@ -1920,6 +1922,11 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparLotes(self):
+        self.label_TituloNomePac.setVisible(False)
+        self.label_NomePac.clear()
+        self.label_SobrenomePac.clear()
+        self.label_NomePac.setVisible(False)
+        self.label_SobrenomePac.setVisible(False)
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -1927,7 +1934,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_lote_5.clear()
         self.line_lote_6.clear()
         self.line_lote_7.clear()
-        self.line_lote_8.clear()
+        self.line_lote_8.clear() 
         self.line_lote_9.clear()
         self.line_lote_10.clear()
         self.line_lote_11.clear()
@@ -1938,6 +1945,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_Erro.clear()
 
     def limparCampos(self):
+        self.line_cpfPac.clear()
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -2674,6 +2682,7 @@ class BaixaItem(QtWidgets.QWidget):
     def buscarPrescricao(self):
     	paciente = Paciente()
     	self.saida = Saida()
+    	
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
             #self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
@@ -2681,6 +2690,7 @@ class BaixaItem(QtWidgets.QWidget):
             self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title() + ' '+paciente.getPaciente()[0][2].title())
             self.line_nomeSobrenome.setVisible(True)
             self.label_NomePac.setVisible(True)
+
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
@@ -2724,7 +2734,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.fontLabel.setFamily("Arial")
         self.fontLabel.setPointSize(10)
         self.fontLabel.setBold(True)
-        self.fontLabel.setWeight(75)
+        self.fontLabel.setWeight(25)
 
         fontQtd = QtGui.QFont()
         fontQtd.setFamily("Times New Roman")
@@ -2737,7 +2747,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(30, 16, 30, 16))
+        self.label_Paciente.setGeometry(QtCore.QRect(35, 12, 30, 16))
         self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Salvar = QtWidgets.QPushButton(Form)
@@ -2758,6 +2768,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
+
         self.label_NomePac = QtWidgets.QLabel(Form)
         self.label_NomePac.setGeometry(QtCore.QRect(20, 40, 30, 16))
         self.label_NomePac.setObjectName("Nome: ")
@@ -2768,6 +2779,12 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_nomeSobrenome.setObjectName("line_nomeSobrenome")
         self.line_nomeSobrenome.setVisible(False)
         self.line_nomeSobrenome.setReadOnly(True)
+
+        self.label_NomePac = QtWidgets.QLabel(Form)
+        self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
+        self.label_NomePac.setObjectName("label_NomePac")
+        self.label_NomePac.setFont(self.fontLabel)
+        self.label_NomePac.setVisible(False)
 
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
@@ -3301,6 +3318,12 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparCampos(self):
+        self.label_TituloNomePac.setVisible(False)
+        self.label_NomePac.clear()
+        self.label_NomePac.setVisible(False)
+        self.label_SobrenomePac.clear()
+        self.label_SobrenomePac.setVisible(False)
+        self.line_cpfPac.clear()
         self.line_med1_15.clear()
         self.line_med1_14.clear()
         self.line_med1_13.clear()
@@ -3669,10 +3692,15 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
             self.prescricao.recuperaBDprescricao()
             self.preencheCampos(self.prescricao.getPrescricao())
+
             self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title()+' '+paciente.getPaciente()[0][2].title())
             self.line_nomeSobrenome.setVisible(True)
             self.label_NomePac.setVisible(True)
 
+            self.label_NomePac.setVisible(True)
+            self.label_SobrenomePac.setVisible(True)
+            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
+            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
         elif self.line_cpfPac.text() != '':
             self.line_nomeSobrenome.setVisible(False)
             self.label_NomePac.setVisible(False)

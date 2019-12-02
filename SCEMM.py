@@ -1194,7 +1194,7 @@ class BaixaItem(QtWidgets.QWidget):
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setFont(self.fontLabel)
-        self.label_Erro.setGeometry(QtCore.QRect(50, 55, 450, 30))
+        self.label_Erro.setGeometry(QtCore.QRect(50, 59, 450, 30))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
@@ -1222,27 +1222,22 @@ class BaixaItem(QtWidgets.QWidget):
         self.checkBox_2.setObjectName("checkBox_2")
         self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
 
-        self.label_TituloNomePac = QtWidgets.QLabel(Form)
-        self.label_TituloNomePac.setFont(self.fontLabel)
-        self.label_TituloNomePac.setGeometry(QtCore.QRect(20, 35, 100, 21))
-        self.label_TituloNomePac.setObjectName("label_TituloNomePac")
-        self.label_TituloNomePac.setText("Paciente:")
-        self.label_TituloNomePac.setVisible(False)
-
         self.label_NomePac = QtWidgets.QLabel(Form)
-        self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
+        self.label_NomePac.setGeometry(QtCore.QRect(25, 40, 35, 16))
         self.label_NomePac.setObjectName("label_NomePac")
-        self.label_NomePac.setFont(self.fontLabel)
-        self.label_SobrenomePac = QtWidgets.QLabel(Form)
-        self.label_SobrenomePac.setGeometry(QtCore.QRect(180, 37, 187, 20))
-        self.label_SobrenomePac.setObjectName("label_SobrenomePac")
-        self.label_SobrenomePac.setFont(self.fontLabel)
+        self.label_NomePac.setVisible(False)
 
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
         self.line_cpfPac.setGeometry(QtCore.QRect(70, 10, 301, 26))
         self.line_cpfPac.setObjectName("line_cpfPac")
         self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
         self.line_cpfPac.setMaxLength(11)
+
+        self.line_nomeSobrenome = QtWidgets.QLineEdit(Form)
+        self.line_nomeSobrenome.setGeometry(QtCore.QRect(70, 40, 301, 26))
+        self.line_nomeSobrenome.setObjectName("line_nomeSobrenome")
+        self.line_nomeSobrenome.setVisible(False)
+        self.line_nomeSobrenome.setReadOnly(True)
 
         self.line_lote = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_lote.setFont(fontMed)
@@ -1798,8 +1793,11 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
         self.label_Paciente.setText(_translate("Form", "CPF: "))
+        self.label_NomePac.setText(_translate("Form", "Nome: "))
         self.line_cpfPac.setToolTip(_translate("Form", "informe o cpf da paciente que deseja ver a prescrição"))
         self.line_cpfPac.setPlaceholderText("informe o cpf do paciente")
+        self.line_nomeSobrenome.setToolTip(_translate("Form", "Nome da paciente buscada"))
+        self.line_nomeSobrenome.setPlaceholderText("Nome da paciente prescrita")
         self.pushButton_Retirar.setToolTip(_translate("Form", "Retira pela prescrição do paciente"))
         self.pushButton_Retirar.setText(_translate("Form", "Retirar"))
         self.pushButton_Retirar.setShortcut(_translate("Form", "Ctrl+S"))
@@ -2039,25 +2037,25 @@ class BaixaItem(QtWidgets.QWidget):
             return None
 
     def lerSeqCampos(self):
-        if self.line_med1.text() and self.line_lote:
+        if self.line_med1.text():
             if self.checkBox.isChecked():
                 vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 1)
             else:
                 vet = (self.line_med1.text(), self.line_qtd1.text(), self.line_lote.text(), 0)
             self.vetMed.append(vet)
-        if self.line_med1_2.text() and self.line_lote_2: 
+        if self.line_med1_2.text(): 
             if self.checkBox_2.isChecked():
                 vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 1)
             else:
                 vet = (self.line_med1_2.text(), self.line_qtd1_2.text(), self.line_lote_2.text(), 0)
             self.vetMed.append(vet)
-        if self.line_med1_3.text() and self.line_lote_3: 
+        if self.line_med1_3.text(): 
             if self.checkBox_3.isChecked():
                 vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 1)
             else:
                 vet = (self.line_med1_3.text(), self.line_qtd1_3.text(), self.line_lote_3.text(), 0)
             self.vetMed.append(vet)
-        if self.line_med1_4.text()  and self.line_lote_4: 
+        if self.line_med1_4.text(): 
             if self.checkBox_4.isChecked():
                 vet = (self.line_med1_4.text(), self.line_qtd1_4.text(), self.line_lote_4.text(), 1)
             else:
@@ -2137,6 +2135,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[0][0])
             self.line_med1.setText(prescricao[0][1])
             self.line_qtd1.setText(str(prescricao[0][2]))
+            #alinhamento
+            self.line_qtd1.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[0][3] == 1:
                 self.checkBox.setChecked(True)
 
@@ -2144,6 +2145,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[1][0])
             self.line_med1_2.setText(prescricao[1][1])
             self.line_qtd1_2.setText(str(prescricao[1][2]))
+            #alinhamento
+            self.line_qtd1_2.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_2.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[1][3] == 1:
                 self.checkBox_2.setChecked(True)
 
@@ -2151,6 +2155,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[2][0])
             self.line_med1_3.setText(prescricao[2][1])
             self.line_qtd1_3.setText(str(prescricao[2][2]))
+            #alinhamento
+            self.line_qtd1_3.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_3.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[2][3] == 1:
                 self.checkBox_3.setChecked(True)
 
@@ -2158,6 +2165,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[3][0])
             self.line_med1_4.setText(prescricao[3][1])
             self.line_qtd1_4.setText(str(prescricao[3][2]))
+            #alinhamento
+            self.line_qtd1_4.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_4.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[3][3] == 1:
                 self.checkBox_4.setChecked(True)
 
@@ -2165,6 +2175,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[4][0])
             self.line_med1_5.setText(prescricao[4][1])
             self.line_qtd1_5.setText(str(prescricao[4][2]))
+            #alinhamento
+            self.line_qtd1_5.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_5.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[4][3] == 1:
                 self.checkBox_5.setChecked(True)
 
@@ -2172,6 +2185,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[5][0])
             self.line_med1_6.setText(prescricao[5][1])
             self.line_qtd1_6.setText(str(prescricao[5][2]))
+            #alinhamento
+            self.line_qtd1_6.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_6.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[5][3] == 1:
                 self.checkBox_6.setChecked(True)
 
@@ -2179,6 +2195,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[6][0])
             self.line_med1_7.setText(prescricao[6][1])
             self.line_qtd1_7.setText(str(prescricao[6][2]))
+            #alinhamento
+            self.line_qtd1_7.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_7.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[6][3] == 1:
                 self.checkBox_7.setChecked(True)
 
@@ -2186,6 +2205,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[7][0])
             self.line_med1_8.setText(prescricao[7][1])
             self.line_qtd1_8.setText(str(prescricao[7][2]))
+            #alinhamento
+            self.line_qtd1_8.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_8.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[7][3] == 1:
                 self.checkBox_8.setChecked(True)
 
@@ -2193,6 +2215,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[8][0])
             self.line_med1_9.setText(prescricao[8][1])
             self.line_qtd1_9.setText(str(prescricao[8][2]))
+            #alinhamento
+            self.line_qtd1_9.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_9.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[8][3] == 1:
                 self.checkBox_9.setChecked(True)
 
@@ -2200,6 +2225,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[9][0])
             self.line_med1_10.setText(prescricao[9][1])
             self.line_qtd1_10.setText(str(prescricao[9][2]))
+            #alinhamento
+            self.line_qtd1_10.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_10.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[9][3] == 1:
                 self.checkBox_10.setChecked(True)
 
@@ -2207,6 +2235,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[10][0])
             self.line_med1_11.setText(prescricao[10][1])
             self.line_qtd1_11.setText(str(prescricao[10][2]))
+            #alinhamento
+            self.line_qtd1_11.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_11.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[10][3] == 1:
                 self.checkBox_11.setChecked(True)
 
@@ -2214,6 +2245,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[11][0])
             self.line_med1_12.setText(prescricao[11][1])
             self.line_qtd1_12.setText(str(prescricao[11][2]))
+            #alinhamento
+            self.line_qtd1_12.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_12.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[11][3] == 1:
                 self.checkBox_12.setChecked(True)
 
@@ -2221,6 +2255,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[12][0])
             self.line_med1_13.setText(prescricao[12][1])
             self.line_qtd1_13.setText(str(prescricao[12][2]))
+            #alinhamento
+            self.line_qtd1_13.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_13.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[12][3] == 1:
                 self.checkBox_13.setChecked(True)
 
@@ -2228,6 +2265,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[13][0])
             self.line_med1_14.setText(prescricao[13][1])
             self.line_qtd1_14.setText(str(prescricao[13][2]))
+            #alinhamento
+            self.line_qtd1_14.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_14.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[13][3] == 1:
                 self.checkBox_14.setChecked(True)
 
@@ -2235,6 +2275,9 @@ class BaixaItem(QtWidgets.QWidget):
             self.prescricao_id.append(prescricao[14][0])
             self.line_med1_15.setText(prescricao[14][1])
             self.line_qtd1_15.setText(str(prescricao[14][2]))
+            #alinhamento
+            self.line_qtd1_15.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_15.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[14][3] == 1:
                 self.checkBox_15.setChecked(True)
 
@@ -2247,6 +2290,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[0][9])
             self.line_med1.setText(item.getItem()[0][1])
             self.line_qtd1.setText(str(saida[0][3]))
+            #alinhamento
+            self.line_qtd1.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox.setChecked(True)
 
     	if len(saida)>1:
@@ -2254,6 +2300,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[1][9])
             self.line_med1_2.setText(item.getItem()[0][1])
             self.line_qtd1_2.setText(str(saida[1][3]))
+            #alinhamento
+            self.line_qtd1_2.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_2.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_2.setChecked(True)
 
     	if len(saida)>2:
@@ -2261,6 +2310,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[2][9])
             self.line_med1_3.setText(item.getItem()[0][1])
             self.line_qtd1_3.setText(str(saida[2][3]))
+            #alinhamento
+            self.line_qtd1_3.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_3.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_3.setChecked(True)
 
     	if len(saida)>3:
@@ -2268,6 +2320,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[3][9])
             self.line_med1_4.setText(item.getItem()[0][1])
             self.line_qtd1_4.setText(str(saida[3][3]))
+            #alinhamento
+            self.line_qtd1_4.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_4.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_4.setChecked(True)
 
     	if len(saida)>4:
@@ -2275,6 +2330,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[4][9])
             self.line_med1_5.setText(item.getItem()[0][1])
             self.line_qtd1_5.setText(str(saida[4][3]))
+            #alinhamento
+            self.line_qtd1_5.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_5.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_5.setChecked(True)
 
     	if len(saida)>5:
@@ -2282,6 +2340,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[5][9])
             self.line_med1_6.setText(item.getItem()[0][1])
             self.line_qtd1_6.setText(str(saida[5][3]))
+            #alinhamento
+            self.line_qtd1_6.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_6.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_6.setChecked(True)
 
     	if len(saida)>6:
@@ -2289,6 +2350,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[6][9])
             self.line_med1_7.setText(item.getItem()[0][1])
             self.line_qtd1_7.setText(str(saida[6][3]))
+            #alinhamento
+            self.line_qtd1_7.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_7.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_7.setChecked(True)
 
     	if len(saida)>7:
@@ -2296,6 +2360,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[7][9])
             self.line_med1_8.setText(item.getItem()[0][1])
             self.line_qtd1_8.setText(str(saida[7][3]))
+            #alinhamento
+            self.line_qtd1_8.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_8.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_8.setChecked(True)
 
     	if len(saida)>8:
@@ -2303,6 +2370,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[8][9])
             self.line_med1_9.setText(item.getItem()[0][1])
             self.line_qtd1_9.setText(str(saida[8][3]))
+            #alinhamento
+            self.line_qtd1_9.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_9.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_9.setChecked(True)
 
     	if len(saida)>9:
@@ -2310,6 +2380,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[9][9])
             self.line_med1_10.setText(item.getItem()[0][1])
             self.line_qtd1_10.setText(str(saida[9][3]))
+            #alinhamento
+            self.line_qtd1_10.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_10.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_10.setChecked(True)
 
     	if len(saida)>10:
@@ -2317,6 +2390,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[10][9])
             self.line_med1_11.setText(item.getItem()[0][1])
             self.line_qtd1_11.setText(str(saida[10][3]))
+            #alinhamento
+            self.line_qtd1_11.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_11.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_11.setChecked(True)
 
     	if len(saida)>11:
@@ -2324,6 +2400,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[11][9])
             self.line_med1_12.setText(item.getItem()[0][1])
             self.line_qtd1_12.setText(str(saida[11][3]))
+            #alinhamento
+            self.line_qtd1_12.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_12.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_12.setChecked(True)
 
     	if len(saida)>12:
@@ -2331,6 +2410,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[12][9])
             self.line_med1_13.setText(item.getItem()[0][1])
             self.line_qtd1_13.setText(str(saida[12][3]))
+            #alinhamento
+            self.line_qtd1_13.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_13.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_13.setChecked(True)
 
     	if len(saida)>13:
@@ -2338,6 +2420,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[13][9])
             self.line_med1_14.setText(item.getItem()[0][1])
             self.line_qtd1_14.setText(str(saida[13][3]))
+            #alinhamento
+            self.line_qtd1_14.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_14.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_14.setChecked(True)
 
     	if len(saida)>14:
@@ -2345,6 +2430,9 @@ class BaixaItem(QtWidgets.QWidget):
             item.recuperaItemBDitemID(saida[14][9])
             self.line_med1_15.setText(item.getItem()[0][1])
             self.line_qtd1_15.setText(str(saida[14][3]))
+            #alinhamento
+            self.line_qtd1_15.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_15.setAlignment(QtCore.Qt.AlignLeft)
             self.checkBox_15.setChecked(True)
 
     def retirarPrescrito(self):
@@ -2360,90 +2448,114 @@ class BaixaItem(QtWidgets.QWidget):
         usuario = Usuario()
         saida = Saida()
         item = Item()
-        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            self.lerSeqCampos()
-            for indice in range(len(self.vetMed)):
-                if self.vetMed[indice][2] != '':
-                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
-                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
-                            item.recuperaBDitem(self.vetMed[indice][2])
-                            if item.getDataVenc()[0][0] > date.today():
-                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
-                                if decremento >= 0:
-                                	if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
-                                		for posicao in range(len(self.vetMed)):
-                                			if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
-                                				self.nomeMedDuplicado = indice
-                                	else:
-                                		self.erroQtdPrescrita = indice
+        if len(self.vetMed)>0:
+            if paciente.validaCPFpaciente(self.line_cpfPac.text()):
+                self.lerSeqCampos()
+                for indice in range(len(self.vetMed)):
+                    if self.vetMed[indice][2]!= '':
+                        if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                            if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                                item.recuperaBDitem(self.vetMed[indice][2])
+                                if item.getDataVenc()[0][0] > date.today():
+                                    decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                                    if decremento >= 0:
+                                    	if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
+                                    		for posicao in range(len(self.vetMed)):
+                                    			if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                                    				self.nomeMedDuplicado = indice
+                                    	else:
+                                    		self.erroQtdPrescrita = indice
+                                    else:
+                                        self.erroQuantidade = indice
                                 else:
-                                    self.erroQuantidade = indice
+                                    self.medicamentoVencido = indice
                             else:
-                                self.medicamentoVencido = indice
+                                self.loteInvalido = indice
                         else:
-                            self.loteInvalido = indice
-                    else:
-                        self.nomeMedInvalido = indice
-            if self.nomeMedInvalido != -1:
-                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
-            elif self.loteInvalido != -1:
-                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
-            elif self.medicamentoVencido != -1:
-                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
-            elif self.nomeMedDuplicado != -1:
-                self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
-            elif self.erroQuantidade != -1:
-                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
-            elif self.erroQtdPrescrita != -1:
-                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
-            else:#
-            	for i in range((len(self.vetMed))):
-                    saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
-                    if self.vetMed[i][2]:
-                        saida.setQtdSaida(self.vetMed[i][1])
-                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
-                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
-                        item.setLote(self.vetMed[i][2])
-                        item.updateQtdItem(decremento)
-                        saida.setIdPrescricao(self.prescricao_id[i])
-                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-                        saida.gravaBDsaida()
-                        self.pushButton_Retirar.setVisible(False)
-                        self.pushButton_RetirarRestante.setVisible(False)
-                    else:
-                        saida.setQtdSaida(0)
-                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
-                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-                        saida.setIdPrescricao(self.prescricao_id[i])
-                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-                        saida.gravaBDsaida()
-                        self.pushButton_Retirar.setVisible(False)
-                        self.pushButton_RetirarRestante.setVisible(False)
+                            self.nomeMedInvalido = indice
+                if self.nomeMedInvalido != -1:
+                    self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
+                elif self.loteInvalido != -1:
+                    self.label_Erro.setText('Lote Inválido ou não digitado: '+self.vetMed[self.loteInvalido][0].upper())
+                elif self.medicamentoVencido != -1:
+                    self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+                elif self.nomeMedDuplicado != -1:
+                    self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
+                elif self.erroQuantidade != -1:
+                    self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+                elif self.erroQtdPrescrita != -1:
+                    self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
+                else:
+                    for i in range((len(self.vetMed))):
+                        saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
+                        if self.vetMed[i][2] != '':
+                            saida.setQtdSaida(self.vetMed[i][1])
+                            saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
+                            saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                            saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                            decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                            item.setLote(self.vetMed[i][2])
+                            item.updateQtdItem(decremento)
+                            saida.setIdPrescricao(self.prescricao_id[i])
+                            item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                            saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                            saida.gravaBDsaida()
+                            self.pushButton_Retirar.setVisible(False)
+                            self.pushButton_RetirarRestante.setVisible(False)
+                        else:
+                            saida.setQtdSaida(0)
+                            saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
+                            saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                            saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                            saida.setIdPrescricao(self.prescricao_id[i])
+                            print(self.prescricao.getPrescricao()[i][1])
+                            item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                            print(item.getItemID()[0][0])
+                            saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                            saida.gravaBDsaida()
+                            self.pushButton_Retirar.setVisible(False)
+                            self.pushButton_RetirarRestante.setVisible(False)
 
                     if saida.qtdRestante>0:
-                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
-                        Mensagem.cor="black"
-                        Mensagem.img=2
+                        naoRetirado = ''
+                        retirado = ''
+                        for i in range(len(self.vetMed)):
+                            if not self.vetMed[i][2] and self.vetMed[i][0]:
+                                print('não tem lote mas tem nome')
+                                naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
+                            if self.vetMed[i][2] and self.vetMed[i][0]:
+                                print('tem nome e tem lote')
+                                retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
+
+                        if naoRetirado and retirado:
+                            Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
+                            Mensagem.cor="black"
+                            Mensagem.img=2
+                            self.switch_window_2.emit()
+                            self.line_cpfPac.clear()
+                            self.line_nomeSobrenome.clear()
+                            self.line_nomeSobrenome.setVisible(False)
+                            self.limparCampos()
+                            self.label_Erro.clear()
+                            self.label_NomePac.setVisible(False)
+                        elif naoRetirado and not retirado:
+                            self.label_Erro.setText('Digite os lotes para fazer a retirada')
                     else:
                         if saida.qtdRestante==0:
                             Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
                             Mensagem.cor="black"
                             Mensagem.img=1
+                            self.switch_window_2.emit()
                             self.line_cpfPac.clear()
-                    self.switch_window_2.emit()
-                    self.limparCampos()
-                    self.label_Erro.clear()
-                    self.label_SobrenomePac.clear()
-                    self.label_NomePac.clear()
-
-
+                            self.line_nomeSobrenome.clear()
+                            self.line_nomeSobrenome.setVisible(False)
+                            self.limparCampos()
+                            self.label_Erro.clear()
+                            self.label_NomePac.setVisible(False)
+            else:
+                self.label_Erro.setText("Paciente não está cadastrado")
         else:
-            self.label_Erro.setText("Paciente não está cadastrado!")
+            self.label_Erro.setText("")
 
     def retirarRestante(self):
         self.nomeMedInvalido = -1
@@ -2462,13 +2574,14 @@ class BaixaItem(QtWidgets.QWidget):
             for indice in range(len(self.vetMed)):
                 if self.vetMed[indice][2] != '':
                     if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                        print("LOTE DIGITADO:"+self.vetMed[indice][2])
                         if item.validaLoteNomeItem(self.vetMed[indice][2]):
                             item.recuperaBDitem(self.vetMed[indice][2])
                             if item.getDataVenc()[0][0] > date.today():
                                 decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
                                 if decremento >= 0:
                                 	if int(self.vetMed[indice][1]) <= self.saida.getSaida()[indice][3]:
-                                		print('OK')
+                                		print('Validação OK')
                                 	else:
                                 		self.erroQtdPrescrita = indice
                                 else:
@@ -2490,7 +2603,8 @@ class BaixaItem(QtWidgets.QWidget):
             elif self.erroQtdPrescrita != -1:
                 self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
             else:
-            	for i in range((len(self.vetMed))):
+                #Caso não existam erros de validação realiza-se a retirada
+                for i in range((len(self.vetMed))):
                     saida.setQtdPrescrita(self.saida.getSaida()[i][1])
                     print(self.vetMed[i][1])
                     if self.vetMed[i][2]:
@@ -2517,22 +2631,42 @@ class BaixaItem(QtWidgets.QWidget):
                         self.pushButton_Retirar.setVisible(False)
                         self.pushButton_RetirarRestante.setVisible(False)
 
-                    if int(saida.qtdRestante) > 0:
-                        Mensagem.msg="Baixa Concluida!\nAinda há medicamentos para retirar"
+                if int(saida.qtdRestante)>0:
+                    naoRetirado = ''
+                    retirado = ''
+                    for i in range(len(self.vetMed)):
+                        if not self.vetMed[i][2] and self.vetMed[i][0]:
+                            naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
+                        if self.vetMed[i][2] and self.vetMed[i][0]:
+                            retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
+
+                    if naoRetirado and retirado:
+                        Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
                         Mensagem.cor="black"
                         Mensagem.img=2
-                    else:
-                        if int(saida.qtdRestante)==0:
-                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
-                            Mensagem.cor="black"
-                            Mensagem.img=1
-                            self.line_cpfPac.clear()
-
-                    self.switch_window_2.emit()
-                    self.limparCampos()
-                    self.label_Erro.clear()
-                    self.label_SobrenomePac.clear()
-                    self.label_NomePac.clear()
+                        self.switch_window_2.emit()
+                        self.line_cpfPac.clear()
+                        self.line_nomeSobrenome.clear()
+                        self.line_nomeSobrenome.setVisible(False)
+                        self.limparCampos()
+                        self.label_Erro.clear()
+                        self.label_NomePac.setVisible(False)
+                    elif naoRetirado and not retirado:
+                        self.label_Erro.setText('Digite os lotes para fazer a retirada')
+                else:
+                    if saida.qtdRestante==0:
+                        Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=1
+                        self.switch_window_2.emit()
+                        self.switch_window_2.emit()
+                        self.line_cpfPac.clear()
+                        self.line_nomeSobrenome.clear()
+                        self.line_nomeSobrenome.setVisible(False)
+                        self.limparCampos()
+                        self.label_Erro.clear()
+                        self.label_NomePac.setVisible(False)
+                
 
         else:
             self.label_Erro.setText("Paciente não está cadastrado!")
@@ -2542,8 +2676,11 @@ class BaixaItem(QtWidgets.QWidget):
     	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
-            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
+            #self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
+            #self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
+            self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title() + ' '+paciente.getPaciente()[0][2].title())
+            self.line_nomeSobrenome.setVisible(True)
+            self.label_NomePac.setVisible(True)
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
@@ -2600,7 +2737,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(30, 35, 20, 16))
+        self.label_Paciente.setGeometry(QtCore.QRect(30, 16, 30, 16))
         self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Salvar = QtWidgets.QPushButton(Form)
@@ -2608,7 +2745,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_Salvar.setObjectName("pushButton_Salvar")
 
         self.pushButton_Buscar = QtWidgets.QPushButton(Form)
-        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
+        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 10, 93, 28))
         self.pushButton_Buscar.setObjectName("pushButton_Buscar")
 
         self.pushButton_Limpar = QtWidgets.QPushButton(Form)
@@ -2617,26 +2754,21 @@ class TelaPrescricao(QtWidgets.QWidget):
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setFont(self.fontLabel)
-        self.label_Erro.setGeometry(QtCore.QRect(70, 58, 450, 21))
+        self.label_Erro.setGeometry(QtCore.QRect(70, 62, 450, 21))
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
-        self.label_TituloNomePac = QtWidgets.QLabel(Form)
-        self.label_TituloNomePac.setFont(self.fontLabel)
-        self.label_TituloNomePac.setGeometry(QtCore.QRect(20, 35, 100, 21))
-        self.label_TituloNomePac.setObjectName("label_TituloNomePac")
-        self.label_TituloNomePac.setText("Paciente:")
+        self.label_NomePac = QtWidgets.QLabel(Form)
+        self.label_NomePac.setGeometry(QtCore.QRect(20, 40, 30, 16))
+        self.label_NomePac.setObjectName("Nome: ")
+        self.label_NomePac.setVisible(False)
 
-        self.label_NomePac = QtWidgets.QLineEdit(Form)
-        self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
-        self.label_NomePac.setObjectName("label_NomePac")
-        self.label_NomePac.setReadOnly(True)
-        self.label_NomePac.setMaxLength(15)
-        self.label_SobrenomePac = QtWidgets.QLineEdit(Form)
-        self.label_SobrenomePac.setGeometry(QtCore.QRect(180, 37, 187, 20))
-        self.label_SobrenomePac.setObjectName("label_SobrenomePac")
-        self.label_SobrenomePac.setReadOnly(True)
-        self.label_SobrenomePac.setMaxLength(40)
+        self.line_nomeSobrenome = QtWidgets.QLineEdit(Form)
+        self.line_nomeSobrenome.setGeometry(QtCore.QRect(70, 40, 301, 26))
+        self.line_nomeSobrenome.setObjectName("line_nomeSobrenome")
+        self.line_nomeSobrenome.setVisible(False)
+        self.line_nomeSobrenome.setReadOnly(True)
+
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
         self.scrollArea.setWidgetResizable(True)
@@ -2662,7 +2794,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
 
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
-        self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
+        self.line_cpfPac.setGeometry(QtCore.QRect(70, 10, 301, 26))
         self.line_cpfPac.setObjectName("line_cpfPac")
         self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
         self.line_cpfPac.setMaxLength(11)
@@ -3061,6 +3193,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
         self.label_Paciente.setText(_translate("Form", "CPF: "))
         self.line_cpfPac.setToolTip(_translate("Form", "Digite o cpf da paciente"))
+        self.label_NomePac.setText(_translate("Form", "Nome: "))
         self.pushButton_Salvar.setToolTip(_translate("Form", "Salva a prescrição do paciente"))
         self.pushButton_Salvar.setText(_translate("Form", "Salvar"))
         self.pushButton_Salvar.setShortcut(_translate("Form", "Ctrl+S"))
@@ -3345,92 +3478,137 @@ class TelaPrescricao(QtWidgets.QWidget):
     	if len(prescricao)>0:
             self.line_med1.setText(prescricao[0][1])
             self.line_qtd1.setText(str(prescricao[0][2]))
+            #alinhamento
+            self.line_qtd1.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1.setAlignment(QtCore.Qt.AlignLeft)
             if prescricao[0][3] == 1:
                 self.checkBox.setChecked(True)
 
     	if len(prescricao)>1:
-    		self.line_med1_2.setText(prescricao[1][1])
-    		self.line_qtd1_2.setText(str(prescricao[1][2]))
-    		if prescricao[1][3] == 1:
-    			self.checkBox_2.setChecked(True)
+            self.line_med1_2.setText(prescricao[1][1])
+            self.line_qtd1_2.setText(str(prescricao[1][2]))
+            #alinhamento
+            self.line_qtd1_2.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_2.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[1][3] == 1:
+                self.checkBox_2.setChecked(True)
 
     	if len(prescricao)>2:
-    		self.line_med1_3.setText(prescricao[2][1])
-    		self.line_qtd1_3.setText(str(prescricao[2][2]))
-    		if prescricao[2][3] == 1:
-    			self.checkBox_3.setChecked(True)
+            self.line_med1_3.setText(prescricao[2][1])
+            self.line_qtd1_3.setText(str(prescricao[2][2]))
+            #alinhamento
+            self.line_qtd1_3.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_3.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[2][3] == 1:
+                self.checkBox_3.setChecked(True)
 
     	if len(prescricao)>3:
-    		self.line_med1_4.setText(prescricao[3][1])
-    		self.line_qtd1_4.setText(str(prescricao[3][2]))
-    		if prescricao[3][3] == 1:
-    			self.checkBox_4.setChecked(True)
+            self.line_med1_4.setText(prescricao[3][1])
+            self.line_qtd1_4.setText(str(prescricao[3][2]))
+            #alinhamento
+            self.line_qtd1_4.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_4.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[3][3] == 1:
+                self.checkBox_4.setChecked(True)
 
     	if len(prescricao)>4:
-    		self.line_med1_5.setText(prescricao[4][1])
-    		self.line_qtd1_5.setText(str(prescricao[4][2]))
-    		if prescricao[4][3] == 1:
-    			self.checkBox_5.setChecked(True)
+            self.line_med1_5.setText(prescricao[4][1])
+            self.line_qtd1_5.setText(str(prescricao[4][2]))
+            #alinhamento
+            self.line_qtd1_5.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_5.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[4][3] == 1:
+                self.checkBox_5.setChecked(True)
 
     	if len(prescricao)>5:
-    		self.line_med1_6.setText(prescricao[5][1])
-    		self.line_qtd1_6.setText(str(prescricao[5][2]))
-    		if prescricao[5][3] == 1:
-    			self.checkBox_6.setChecked(True)
+            self.line_med1_6.setText(prescricao[5][1])
+            self.line_qtd1_6.setText(str(prescricao[5][2]))
+            #alinhamento
+            self.line_qtd1_6.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_6.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[5][3] == 1:
+                self.checkBox_6.setChecked(True)
 
     	if len(prescricao)>6:
-    		self.line_med1_7.setText(prescricao[6][1])
-    		self.line_qtd1_7.setText(str(prescricao[6][2]))
-    		if prescricao[6][3] == 1:
-    			self.checkBox_7.setChecked(True)
+            self.line_med1_7.setText(prescricao[6][1])
+            self.line_qtd1_7.setText(str(prescricao[6][2]))
+            #alinhamento
+            self.line_qtd1_7.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_7.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[6][3] == 1:
+                self.checkBox_7.setChecked(True)
 
     	if len(prescricao)>7:
-    		self.line_med1_8.setText(prescricao[7][1])
-    		self.line_qtd1_8.setText(str(prescricao[7][2]))
-    		if prescricao[7][3] == 1:
-    			self.checkBox_8.setChecked(True)
+            self.line_med1_8.setText(prescricao[7][1])
+            self.line_qtd1_8.setText(str(prescricao[7][2]))
+            #alinhamento
+            self.line_qtd1_8.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_8.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[7][3] == 1:
+                self.checkBox_8.setChecked(True)
 
     	if len(prescricao)>8:
-    		self.line_med1_9.setText(prescricao[8][1])
-    		self.line_qtd1_9.setText(str(prescricao[8][2]))
-    		if prescricao[8][3] == 1:
-    			self.checkBox_9.setChecked(True)
+            self.line_med1_9.setText(prescricao[8][1])
+            self.line_qtd1_9.setText(str(prescricao[8][2]))
+            #alinhamento
+            self.line_qtd1_9.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_9.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[8][3] == 1:
+                self.checkBox_9.setChecked(True)
 
     	if len(prescricao)>9:
-    		self.line_med1_10.setText(prescricao[9][1])
-    		self.line_qtd1_10.setText(str(prescricao[9][2]))
-    		if prescricao[9][3] == 1:
-    			self.checkBox_10.setChecked(True)
+            self.line_med1_10.setText(prescricao[9][1])
+            self.line_qtd1_10.setText(str(prescricao[9][2]))
+            #alinhamento
+            self.line_qtd1_10.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_10.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[9][3] == 1:
+                self.checkBox_10.setChecked(True)
 
     	if len(prescricao)>10:
-    		self.line_med1_11.setText(prescricao[10][1])
-    		self.line_qtd1_11.setText(str(prescricao[10][2]))
-    		if prescricao[10][3] == 1:
-    			self.checkBox_11.setChecked(True)
+            self.line_med1_11.setText(prescricao[10][1])
+            self.line_qtd1_11.setText(str(prescricao[10][2]))
+            #alinhamento
+            self.line_qtd1_11.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_11.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[10][3] == 1:
+                self.checkBox_11.setChecked(True)
 
     	if len(prescricao)>11:
-    		self.line_med1_12.setText(prescricao[11][1])
-    		self.line_qtd1_12.setText(str(prescricao[11][2]))
-    		if prescricao[11][3] == 1:
-    			self.checkBox_12.setChecked(True)
+            self.line_med1_12.setText(prescricao[11][1])
+            self.line_qtd1_12.setText(str(prescricao[11][2]))
+            #alinhamento
+            self.line_qtd1_12.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_12.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[11][3] == 1:
+                self.checkBox_12.setChecked(True)
 
     	if len(prescricao)>12:
-    		self.line_med1_13.setText(prescricao[12][1])
-    		self.line_qtd1_13.setText(str(prescricao[12][2]))
-    		if prescricao[12][3] == 1:
-    			self.checkBox_13.setChecked(True)
+            self.line_med1_13.setText(prescricao[12][1])
+            self.line_qtd1_13.setText(str(prescricao[12][2]))
+            #alinhamento
+            self.line_qtd1_13.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_13.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[12][3] == 1:
+                self.checkBox_13.setChecked(True)
 
     	if len(prescricao)>13:
-    		self.line_med1_14.setText(prescricao[13][1])
-    		self.line_qtd1_14.setText(str(prescricao[13][2]))
-    		if prescricao[13][3] == 1:
-    			self.checkBox_14.setChecked(True)
+            self.line_med1_14.setText(prescricao[13][1])
+            self.line_qtd1_14.setText(str(prescricao[13][2]))
+            #alinhamento
+            self.line_qtd1_14.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_14.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[13][3] == 1:
+                self.checkBox_14.setChecked(True)
 
     	if len(prescricao)>14:
-    		self.line_med1_15.setText(prescricao[14][1])
-    		self.line_qtd1_15.setText(str(prescricao[14][2]))
-    		if prescricao[14][3] == 1:
-    			self.checkBox_15.setChecked(True)
+            self.line_med1_15.setText(prescricao[14][1])
+            self.line_qtd1_15.setText(str(prescricao[14][2]))
+            #alinhamento
+            self.line_qtd1_15.setAlignment(QtCore.Qt.AlignRight)
+            self.line_med1_15.setAlignment(QtCore.Qt.AlignLeft)
+            if prescricao[14][3] == 1:
+                self.checkBox_15.setChecked(True)
 
     def salvarPrescricao(self):
     	self.label_Erro.clear()
@@ -3478,9 +3656,9 @@ class TelaPrescricao(QtWidgets.QWidget):
                 self.limparCampos()
             else:
                 if medicamentoInvalido:
-                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].upper()+" não está cadastrado!")
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoInvalido][0].title()+" não está cadastrado!")
                 else:
-                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].upper()+" está duplicado!")
+                    self.label_Erro.setText("O medicamento "+self.vetMed[medicamentoDuplicado][0].title()+" está duplicado!")
     	else:
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
@@ -3491,11 +3669,13 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
             self.prescricao.recuperaBDprescricao()
             self.preencheCampos(self.prescricao.getPrescricao())
-            print(paciente.getPaciente())
-            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
-            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
+            self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title()+' '+paciente.getPaciente()[0][2].title())
+            self.line_nomeSobrenome.setVisible(True)
+            self.label_NomePac.setVisible(True)
 
         elif self.line_cpfPac.text() != '':
+            self.line_nomeSobrenome.setVisible(False)
+            self.label_NomePac.setVisible(False)
             self.label_Erro.setText("Paciente não cadastrado")
 
       
@@ -5367,11 +5547,13 @@ class Mensagem(QtWidgets.QWidget):
 
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.setFixedSize(400, 250)
+        Form.setFixedSize(400, 500)
         Form.setWindowIcon(QtGui.QIcon("img/home.png"))
         self.imagem = QtWidgets.QLabel(Form)
         self.imagem.setScaledContents(True)
-        self.imagem.setGeometry(150,90,90,90)
+        self.imagem.setAlignment(QtCore.Qt.AlignHCenter)
+        self.imagem.setGeometry(155,340,90,90)
+
         
         print (self.img)
         if self.img == 1:
@@ -5395,11 +5577,11 @@ class Mensagem(QtWidgets.QWidget):
         self.label.setFont(self.fontLabel)
         self.label.setAlignment(QtCore.Qt.AlignHCenter)
         self.label.setStyleSheet('QLabel {color:' + self.cor + '}')
-        self.label.setGeometry(0, 30, 400, 125)
+        self.label.setGeometry(0, 30, 400, 455)
         self.label.setObjectName("Usuario")
 
         self.pushButton = QtWidgets.QPushButton(Form)
-        self.pushButton.setGeometry(QtCore.QRect(155, 200, 91, 28))
+        self.pushButton.setGeometry(QtCore.QRect(155, 460, 91, 28))
         self.pushButton.setObjectName("OK")
 
         self.retranslateUi(Form)

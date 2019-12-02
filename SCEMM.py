@@ -1227,6 +1227,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_TituloNomePac.setGeometry(QtCore.QRect(20, 35, 100, 21))
         self.label_TituloNomePac.setObjectName("label_TituloNomePac")
         self.label_TituloNomePac.setText("Paciente:")
+        self.label_TituloNomePac.setVisible(False)
 
         self.label_NomePac = QtWidgets.QLabel(Form)
         self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))

@@ -1,3 +1,5 @@
+#SCEMM
+#Feito por: Guilherme Camargo / Oséias Magalhães
 import os
 import sys
 import psutil as ps

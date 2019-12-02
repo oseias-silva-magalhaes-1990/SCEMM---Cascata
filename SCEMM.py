@@ -1153,7 +1153,7 @@ class BaixaItem(QtWidgets.QWidget):
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
-        self.fontLabel.setPointSize(12)
+        self.fontLabel.setPointSize(10)
         self.fontLabel.setBold(True)
         self.fontLabel.setWeight(25)
 
@@ -1168,7 +1168,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(35, 35, 30, 16))
+        self.label_Paciente.setGeometry(QtCore.QRect(35, 10, 30, 16))
         self.label_Paciente.setObjectName("label_CPF")
 
         self.pushButton_Retirar = QtWidgets.QPushButton(Form)
@@ -1182,7 +1182,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_RetirarRestante.setVisible(False)
 
         self.pushButton_Buscar = QtWidgets.QPushButton(Form)
-        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 29, 93, 28))
+        self.pushButton_Buscar.setGeometry(QtCore.QRect(381, 10, 93, 28))
         self.pushButton_Buscar.setObjectName("pushButton_Buscar")
 
 
@@ -1220,25 +1220,25 @@ class BaixaItem(QtWidgets.QWidget):
         self.checkBox_2.setObjectName("checkBox_2")
         self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
 
-        self.label_nomePac = QtWidgets.QLabel(Form)
-        self.label_nomePac.setFont(self.fontLabel)
-        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
-        self.label_nomePac.setObjectName("label_nomePac")
-        self.label_nomePac.setText("Paciente:")
+        self.label_TituloNomePac = QtWidgets.QLabel(Form)
+        self.label_TituloNomePac.setFont(self.fontLabel)
+        self.label_TituloNomePac.setGeometry(QtCore.QRect(20, 35, 100, 21))
+        self.label_TituloNomePac.setObjectName("label_TituloNomePac")
+        self.label_TituloNomePac.setText("Paciente:")
 
-        self.line_nomePac = QtWidgets.QLineEdit(Form)
-        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
-        self.line_nomePac.setObjectName("line_nomePac")
-        self.line_nomePac.setReadOnly(True)
-        self.line_nomePac.setMaxLength(15)
-        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
-        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 285, 187, 30))
-        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
-        self.line_sobrenomePac.setReadOnly(True)
-        self.line_sobrenomePac.setMaxLength(40)
+        self.label_NomePac = QtWidgets.QLineEdit(Form)
+        self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
+        self.label_NomePac.setObjectName("label_NomePac")
+        self.label_NomePac.setReadOnly(True)
+        self.label_NomePac.setMaxLength(15)
+        self.label_SobrenomePac = QtWidgets.QLineEdit(Form)
+        self.label_SobrenomePac.setGeometry(QtCore.QRect(180, 37, 187, 20))
+        self.label_SobrenomePac.setObjectName("label_SobrenomePac")
+        self.label_SobrenomePac.setReadOnly(True)
+        self.label_SobrenomePac.setMaxLength(40)
 
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
-        self.line_cpfPac.setGeometry(QtCore.QRect(70, 30, 301, 26))
+        self.line_cpfPac.setGeometry(QtCore.QRect(70, 10, 301, 26))
         self.line_cpfPac.setObjectName("line_cpfPac")
         self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
         self.line_cpfPac.setMaxLength(11)
@@ -2437,8 +2437,8 @@ class BaixaItem(QtWidgets.QWidget):
                     self.switch_window_2.emit()
                     self.limparCampos()
                     self.label_Erro.clear()
-                    self.line_sobrenomePac.clear()
-                    self.line_nomePac.clear()
+                    self.label_SobrenomePac.clear()
+                    self.label_NomePac.clear()
 
 
         else:
@@ -2530,8 +2530,8 @@ class BaixaItem(QtWidgets.QWidget):
                     self.switch_window_2.emit()
                     self.limparCampos()
                     self.label_Erro.clear()
-                    self.line_sobrenomePac.clear()
-                    self.line_nomePac.clear()
+                    self.label_SobrenomePac.clear()
+                    self.label_NomePac.clear()
 
         else:
             self.label_Erro.setText("Paciente não está cadastrado!")
@@ -2541,8 +2541,8 @@ class BaixaItem(QtWidgets.QWidget):
     	self.saida = Saida()
     	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
             paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.line_nomePac.setText(paciente.getPaciente()[0][1].title())
-            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].title())
+            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
+            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
             	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
             	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
@@ -2620,24 +2620,22 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.label_Erro.setObjectName("label_Erro")
         self.label_Erro.setStyleSheet('QLabel {color: red}')
 
-        self.label_nomePac = QtWidgets.QLabel(Form)
-        self.label_nomePac.setFont(self.fontLabel)
-        self.label_nomePac.setGeometry(QtCore.QRect(380, 220, 100, 21))
-        self.label_nomePac.setObjectName("label_nomePac")
-        self.label_nomePac.setText("Paciente:")
+        self.label_TituloNomePac = QtWidgets.QLabel(Form)
+        self.label_TituloNomePac.setFont(self.fontLabel)
+        self.label_TituloNomePac.setGeometry(QtCore.QRect(20, 35, 100, 21))
+        self.label_TituloNomePac.setObjectName("label_TituloNomePac")
+        self.label_TituloNomePac.setText("Paciente:")
 
-        self.line_nomePac = QtWidgets.QLineEdit(Form)
-        self.line_nomePac.setGeometry(QtCore.QRect(380, 250, 187, 30))
-        self.line_nomePac.setObjectName("line_nomePac")
-        self.line_nomePac.setReadOnly(True)
-        self.line_nomePac.setMaxLength(15)
-
-        self.line_sobrenomePac = QtWidgets.QLineEdit(Form)
-        self.line_sobrenomePac.setGeometry(QtCore.QRect(380, 285, 187, 30))
-        self.line_sobrenomePac.setObjectName("line_sobrenomePac")
-        self.line_sobrenomePac.setReadOnly(True)
-        self.line_sobrenomePac.setMaxLength(40)
-
+        self.label_NomePac = QtWidgets.QLineEdit(Form)
+        self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
+        self.label_NomePac.setObjectName("label_NomePac")
+        self.label_NomePac.setReadOnly(True)
+        self.label_NomePac.setMaxLength(15)
+        self.label_SobrenomePac = QtWidgets.QLineEdit(Form)
+        self.label_SobrenomePac.setGeometry(QtCore.QRect(180, 37, 187, 20))
+        self.label_SobrenomePac.setObjectName("label_SobrenomePac")
+        self.label_SobrenomePac.setReadOnly(True)
+        self.label_SobrenomePac.setMaxLength(40)
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
         self.scrollArea.setWidgetResizable(True)
@@ -3493,8 +3491,8 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.prescricao.recuperaBDprescricao()
             self.preencheCampos(self.prescricao.getPrescricao())
             print(paciente.getPaciente())
-            self.line_nomePac.setText(paciente.getPaciente()[0][1].title())
-            self.line_sobrenomePac.setText(paciente.getPaciente()[0][2].title())
+            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
+            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
 
         elif self.line_cpfPac.text() != '':
             self.label_Erro.setText("Paciente não cadastrado")

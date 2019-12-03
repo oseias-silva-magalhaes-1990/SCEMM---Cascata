@@ -2716,6 +2716,12 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.comboBoxBusca = QtWidgets.QComboBox(Form)
         self.comboBoxBusca.setGeometry(QtCore.QRect(70,10,301,26))
         self.comboBoxBusca.setObjectName("Combo Box Busca")
+        paciente = Paciente()
+        paciente.recuperaBDpacienteSP()
+        dados = sorted(paciente.getPaciente(), key=itemgetter(1))
+        self.comboBoxBusca.addItem("Escolha a paciente")
+        for i in range(len(dados)):
+            self.comboBoxBusca.addItem(dados[i][1].title()+' '+dados[i][2].title())
 
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
@@ -3189,12 +3195,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         Form.setTabOrder(self.pushButton_Salvar, self.pushButton)
         Form.setTabOrder(self.pushButton, self.scrollArea)
 
-        paciente = Paciente()
-        paciente.recuperaBDpacienteSP()
-        dados = sorted(paciente.getPaciente(), key=itemgetter(1))
-        self.comboBoxBusca.addItem("Escolha a paciente")
-        for i in range(len(dados)):
-            self.comboBoxBusca.addItem(dados[i][1].title()+' '+dados[i][2].title())
+        
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
@@ -6076,12 +6077,25 @@ class Ui_BaixaManual(object):
         self.label_Item.setObjectName("label_Item")
 
         self.lineEdit_Nome = QtWidgets.QLineEdit(Form)
-        self.lineEdit_Nome.setGeometry(QtCore.QRect(115, 70, 310, 25))
+        self.lineEdit_Nome.setGeometry(QtCore.QRect(115, 70, 280, 26))
         self.lineEdit_Nome.setObjectName("Campo Nome ou lote")
         self.lineEdit_Nome.setToolTip("Digite o nome ou lote do item à ser retirado")
         self.lineEdit_Nome.setPlaceholderText("Digite o nome ou lote do item")
         self.lineEdit_Nome.setFont(self.fontCampos)
         self.lineEdit_Nome.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[a-zA-z0-9 ]+"), self.lineEdit_Nome))
+
+        self.comboBoxBusca = QtWidgets.QComboBox(Form)
+        self.comboBoxBusca.setGeometry(QtCore.QRect(115,70,310,26))
+        self.comboBoxBusca.setObjectName("Combo Box Busca")
+        self.comboBoxBusca.setToolTip("Escolha o nome do item à ser retirado")
+        item = Item()
+        item.recuperaItemBDSP()
+        dados = sorted(item.getPaciente(), key=itemgetter(1))
+        self.comboBoxBusca.addItem("Escolha o item")
+        for i in range(len(dados)):
+            self.comboBoxBusca.addItem(dados[i][1].title()+' '+dados[i][2].title())
+
+        combo.activated [str] .connect (self.lineEdit_Nome.setText(self.comboBoxBusca.currentText()))
 
         self.label_Erro = QtWidgets.QLabel(Form)
         self.label_Erro.setGeometry(QtCore.QRect(30, 130, 340, 20))
@@ -6156,7 +6170,7 @@ class BaixaManual(QtWidgets.QWidget, Ui_BaixaManual):
         self.label_6.setVisible(False)
 
     def buscaMedicamentos(self):
-
+        #linha edit
         loteNome=self.lineEdit_Nome.text()
         item=Item()
         if loteNome:

@@ -1223,7 +1223,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.gridLayout.addWidget(self.checkBox_2, 1, 2, 1, 1)
 
         self.label_NomePac = QtWidgets.QLabel(Form)
-        self.label_NomePac.setGeometry(QtCore.QRect(25, 40, 35, 16))
+        self.label_NomePac.setGeometry(QtCore.QRect(25, 45, 40, 16))
         self.label_NomePac.setObjectName("label_NomePac")
         self.label_NomePac.setVisible(False)
 
@@ -1922,11 +1922,8 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparLotes(self):
-        self.label_TituloNomePac.setVisible(False)
         self.label_NomePac.clear()
-        self.label_SobrenomePac.clear()
         self.label_NomePac.setVisible(False)
-        self.label_SobrenomePac.setVisible(False)
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -1945,7 +1942,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_Erro.clear()
 
     def limparCampos(self):
-        self.line_cpfPac.clear()
+        #self.line_cpfPac.clear()
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -2770,7 +2767,7 @@ class TelaPrescricao(QtWidgets.QWidget):
 
 
         self.label_NomePac = QtWidgets.QLabel(Form)
-        self.label_NomePac.setGeometry(QtCore.QRect(20, 40, 30, 16))
+        self.label_NomePac.setGeometry(QtCore.QRect(20, 45, 40, 16))
         self.label_NomePac.setObjectName("Nome: ")
         self.label_NomePac.setVisible(False)
 
@@ -2780,11 +2777,11 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_nomeSobrenome.setVisible(False)
         self.line_nomeSobrenome.setReadOnly(True)
 
-        self.label_NomePac = QtWidgets.QLabel(Form)
+        '''self.label_NomePac = QtWidgets.QLabel(Form)
         self.label_NomePac.setGeometry(QtCore.QRect(90, 37, 90, 20))
         self.label_NomePac.setObjectName("label_NomePac")
         self.label_NomePac.setFont(self.fontLabel)
-        self.label_NomePac.setVisible(False)
+        self.label_NomePac.setVisible(False)'''
 
         self.scrollArea = QtWidgets.QScrollArea(Form)
         self.scrollArea.setGeometry(QtCore.QRect(20, 100, 351, 341))
@@ -3318,12 +3315,13 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparCampos(self):
-        self.label_TituloNomePac.setVisible(False)
+
         self.label_NomePac.clear()
         self.label_NomePac.setVisible(False)
-        self.label_SobrenomePac.clear()
-        self.label_SobrenomePac.setVisible(False)
-        self.line_cpfPac.clear()
+        self.line_nomeSobrenome.clear()
+        self.line_nomeSobrenome.setVisible(False)
+
+        #self.line_cpfPac.clear()
         self.line_med1_15.clear()
         self.line_med1_14.clear()
         self.line_med1_13.clear()
@@ -3696,11 +3694,8 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title()+' '+paciente.getPaciente()[0][2].title())
             self.line_nomeSobrenome.setVisible(True)
             self.label_NomePac.setVisible(True)
+            self.label_NomePac.setText("Nome:")
 
-            self.label_NomePac.setVisible(True)
-            self.label_SobrenomePac.setVisible(True)
-            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
-            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
         elif self.line_cpfPac.text() != '':
             self.line_nomeSobrenome.setVisible(False)
             self.label_NomePac.setVisible(False)

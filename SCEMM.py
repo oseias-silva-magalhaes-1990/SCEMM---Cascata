@@ -1938,11 +1938,6 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_qtd1_15.copy()
 
     def limparLotes(self):
-<<<<<<< HEAD
-        self.label_NomePac.clear()
-        self.label_NomePac.setVisible(False)
-=======
->>>>>>> f71b99812e7d28ec9f65d9d05fd258d1c7640c85
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -1961,10 +1956,6 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_Erro.clear()
 
     def limparCampos(self):
-<<<<<<< HEAD
-        #self.line_cpfPac.clear()
-=======
->>>>>>> f71b99812e7d28ec9f65d9d05fd258d1c7640c85
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -3322,17 +3313,6 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparCampos(self):
-<<<<<<< HEAD
-
-        self.label_NomePac.clear()
-        self.label_NomePac.setVisible(False)
-        self.line_nomeSobrenome.clear()
-        self.line_nomeSobrenome.setVisible(False)
-
-        #self.line_cpfPac.clear()
-=======
-        self.line_cpfPac.clear()
->>>>>>> f71b99812e7d28ec9f65d9d05fd258d1c7640c85
         self.line_med1_15.clear()
         self.line_med1_14.clear()
         self.line_med1_13.clear()
@@ -3695,25 +3675,6 @@ class TelaPrescricao(QtWidgets.QWidget):
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
-<<<<<<< HEAD
-        paciente = Paciente()
-        if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-            self.prescricao.recuperaBDprescricao()
-            self.preencheCampos(self.prescricao.getPrescricao())
-
-            self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title()+' '+paciente.getPaciente()[0][2].title())
-            self.line_nomeSobrenome.setVisible(True)
-            self.label_NomePac.setVisible(True)
-            self.label_NomePac.setText("Nome:")
-
-        elif self.line_cpfPac.text() != '':
-            self.line_nomeSobrenome.setVisible(False)
-            self.label_NomePac.setVisible(False)
-            self.label_Erro.setText("Paciente não cadastrado")
-
-=======
         if self.comboBoxBusca.currentText() != 'Escolha a paciente':#Escolhe o nome da paciente
             paciente = Paciente()#instancia a classe paciente
             nome = self.comboBoxBusca.currentText().split()#Copia para a variavel nome o nome escolhido
@@ -3729,7 +3690,6 @@ class TelaPrescricao(QtWidgets.QWidget):
             self.preencheCampos(self.prescricao.getPrescricao())#preenche os campos com os dados da prescrição caso existam
         else:
             self.limparCampos()
->>>>>>> f71b99812e7d28ec9f65d9d05fd258d1c7640c85
       
 
 #===========================================================================================================================

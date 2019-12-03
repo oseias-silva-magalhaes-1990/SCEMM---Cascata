@@ -313,6 +313,12 @@ class BDpaciente(object):
         self.db.close()
         return paciente
 
+    def selectAllPacienteSobrenome(self, sobrenome):
+        self.cursor.execute("SELECT * FROM paciente WHERE sobrenome LIKE %s", sobrenome)
+        paciente = self.cursor.fetchall()
+        self.db.close()
+        return paciente
+
     def selectAllPacienteSP(self):
         self.cursor.execute("SELECT * FROM paciente")
         paciente = self.cursor.fetchall()
@@ -836,6 +842,10 @@ class Paciente(object):
         bdPac = BDpaciente()
         self.pac = bdPac.selectAllPaciente(cpfNome)
 
+    def recuperaBDpacienteSobrenome(self, sobrenome):
+        bdPac = BDpaciente()
+        self.pac = bdPac.selectAllPacienteSobrenome(sobrenome)
+
     def recuperaBDpacienteSP(self):
         bdPac = BDpaciente()
         self.pac = bdPac.selectAllPacienteSP()
@@ -1159,6 +1169,10 @@ class BaixaItem(QtWidgets.QWidget):
         self.fontLabel.setBold(True)
         self.fontLabel.setWeight(25)
 
+        self.comboBoxBusca = QtWidgets.QComboBox(Form)
+        self.comboBoxBusca.setGeometry(QtCore.QRect(70,10,301,26))
+        self.comboBoxBusca.setObjectName("Combo Box Busca")
+
         fontQtd = QtGui.QFont()
         fontQtd.setFamily("Arial")
 
@@ -1227,12 +1241,13 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_NomePac.setObjectName("label_NomePac")
         self.label_NomePac.setVisible(False)
 
-
+        #Sem utilidade
         self.line_cpfPac = QtWidgets.QLineEdit(Form)
         self.line_cpfPac.setGeometry(QtCore.QRect(70, 10, 301, 26))
         self.line_cpfPac.setObjectName("line_cpfPac")
         self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
         self.line_cpfPac.setMaxLength(11)
+        self.line_cpfPac.setVisible(False)
 
         self.line_nomeSobrenome = QtWidgets.QLineEdit(Form)
         self.line_nomeSobrenome.setGeometry(QtCore.QRect(70, 40, 301, 26))
@@ -1787,6 +1802,13 @@ class BaixaItem(QtWidgets.QWidget):
         Form.setTabOrder(self.pushButton_Retirar, self.pushButton)
         Form.setTabOrder(self.pushButton, self.scrollArea)
 
+        paciente = Paciente()
+        paciente.recuperaBDpacienteSP()
+        dados = sorted(paciente.getPaciente(), key=itemgetter(1))
+        self.comboBoxBusca.addItem("Escolha a paciente")
+        for i in range(len(dados)):
+            self.comboBoxBusca.addItem(dados[i][1].title()+' '+dados[i][2].title())
+
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Baixa do restoque por paciente"))
@@ -1794,12 +1816,7 @@ class BaixaItem(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
-        self.label_Paciente.setText(_translate("Form", "CPF: "))
-        self.label_NomePac.setText(_translate("Form", "Nome: "))
-        self.line_cpfPac.setToolTip(_translate("Form", "informe o cpf da paciente que deseja ver a prescrição"))
-        self.line_cpfPac.setPlaceholderText("informe o cpf do paciente")
-        self.line_nomeSobrenome.setToolTip(_translate("Form", "Nome da paciente buscada"))
-        self.line_nomeSobrenome.setPlaceholderText("Nome da paciente prescrita")
+        self.label_Paciente.setText(_translate("Form", "Paciente: "))
         self.pushButton_Retirar.setToolTip(_translate("Form", "Retira pela prescrição do paciente"))
         self.pushButton_Retirar.setText(_translate("Form", "Retirar"))
         self.pushButton_Retirar.setShortcut(_translate("Form", "Ctrl+S"))
@@ -1919,14 +1936,8 @@ class BaixaItem(QtWidgets.QWidget):
         self.line_qtd1_13.copy()
         self.line_qtd1_14.copy()
         self.line_qtd1_15.copy()
-        self.line_cpfPac.copy()
 
     def limparLotes(self):
-        self.label_TituloNomePac.setVisible(False)
-        self.label_NomePac.clear()
-        self.label_SobrenomePac.clear()
-        self.label_NomePac.setVisible(False)
-        self.label_SobrenomePac.setVisible(False)
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -1945,7 +1956,6 @@ class BaixaItem(QtWidgets.QWidget):
         self.label_Erro.clear()
 
     def limparCampos(self):
-        self.line_cpfPac.clear()
         self.line_lote.clear()
         self.line_lote_2.clear()
         self.line_lote_3.clear()
@@ -2456,114 +2466,102 @@ class BaixaItem(QtWidgets.QWidget):
         usuario = Usuario()
         saida = Saida()
         item = Item()
+        self.lerSeqCampos()
         if len(self.vetMed)>0:
-            if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-                self.lerSeqCampos()
-                for indice in range(len(self.vetMed)):
-                    if self.vetMed[indice][2]!= '':
-                        if item.validaLoteNomeItem(self.vetMed[indice][0]):
-                            if item.validaLoteNomeItem(self.vetMed[indice][2]):
-                                item.recuperaBDitem(self.vetMed[indice][2])
-                                if item.getDataVenc()[0][0] > date.today():
-                                    decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
-                                    if decremento >= 0:
-                                    	if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
-                                    		for posicao in range(len(self.vetMed)):
-                                    			if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
-                                    				self.nomeMedDuplicado = indice
-                                    	else:
-                                    		self.erroQtdPrescrita = indice
+            for indice in range(len(self.vetMed)):
+                if self.vetMed[indice][2] != '':
+                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                            item.recuperaBDitem(self.vetMed[indice][2])
+                            if item.getDataVenc()[0][0] > date.today():
+                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                                if decremento >= 0:
+                                    if int(self.vetMed[indice][1]) <= self.prescricao.getPrescricao()[indice][2]:
+                                        for posicao in range(len(self.vetMed)):
+                                            if self.vetMed[indice][0] == self.vetMed[posicao][0] and indice != posicao:
+                                                self.nomeMedDuplicado = indice
                                     else:
-                                        self.erroQuantidade = indice
+                                        self.erroQtdPrescrita = indice
                                 else:
-                                    self.medicamentoVencido = indice
+                                    self.erroQuantidade = indice
                             else:
-                                self.loteInvalido = indice
+                                self.medicamentoVencido = indice
                         else:
-                            self.nomeMedInvalido = indice
-                if self.nomeMedInvalido != -1:
-                    self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
-                elif self.loteInvalido != -1:
-                    self.label_Erro.setText('Lote Inválido ou não digitado: '+self.vetMed[self.loteInvalido][0].upper())
-                elif self.medicamentoVencido != -1:
-                    self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
-                elif self.nomeMedDuplicado != -1:
-                    self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
-                elif self.erroQuantidade != -1:
-                    self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
-                elif self.erroQtdPrescrita != -1:
-                    self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
-                else:
-                    for i in range((len(self.vetMed))):
-                        saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
-                        if self.vetMed[i][2] != '':
-                            saida.setQtdSaida(self.vetMed[i][1])
-                            saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
-                            saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                            saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-                            decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
-                            item.setLote(self.vetMed[i][2])
-                            item.updateQtdItem(decremento)
-                            saida.setIdPrescricao(self.prescricao_id[i])
-                            item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-                            saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-                            saida.gravaBDsaida()
-                            self.pushButton_Retirar.setVisible(False)
-                            self.pushButton_RetirarRestante.setVisible(False)
-                        else:
-                            saida.setQtdSaida(0)
-                            saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
-                            saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                            saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
-                            saida.setIdPrescricao(self.prescricao_id[i])
-                            print(self.prescricao.getPrescricao()[i][1])
-                            item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
-                            print(item.getItemID()[0][0])
-                            saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
-                            saida.gravaBDsaida()
-                            self.pushButton_Retirar.setVisible(False)
-                            self.pushButton_RetirarRestante.setVisible(False)
-
-                    if saida.qtdRestante>0:
-                        naoRetirado = ''
-                        retirado = ''
-                        for i in range(len(self.vetMed)):
-                            if not self.vetMed[i][2] and self.vetMed[i][0]:
-                                print('não tem lote mas tem nome')
-                                naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
-                            if self.vetMed[i][2] and self.vetMed[i][0]:
-                                print('tem nome e tem lote')
-                                retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
-
-                        if naoRetirado and retirado:
-                            Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
-                            Mensagem.cor="black"
-                            Mensagem.img=2
-                            self.switch_window_2.emit()
-                            self.line_cpfPac.clear()
-                            self.line_nomeSobrenome.clear()
-                            self.line_nomeSobrenome.setVisible(False)
-                            self.limparCampos()
-                            self.label_Erro.clear()
-                            self.label_NomePac.setVisible(False)
-                        elif naoRetirado and not retirado:
-                            self.label_Erro.setText('Digite os lotes para fazer a retirada')
+                            self.loteInvalido = indice
                     else:
-                        if saida.qtdRestante==0:
-                            Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
-                            Mensagem.cor="black"
-                            Mensagem.img=1
-                            self.switch_window_2.emit()
-                            self.line_cpfPac.clear()
-                            self.line_nomeSobrenome.clear()
-                            self.line_nomeSobrenome.setVisible(False)
-                            self.limparCampos()
-                            self.label_Erro.clear()
-                            self.label_NomePac.setVisible(False)
+                        self.nomeMedInvalido = indice
+
+            if self.nomeMedInvalido != -1:
+                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0])
+            elif self.loteInvalido != -1:
+                self.label_Erro.setText('Lote Inválido ou não digitado: '+self.vetMed[self.loteInvalido][0].upper())
+            elif self.medicamentoVencido != -1:
+                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+            elif self.nomeMedDuplicado != -1:
+                self.label_Erro.setText('Medicamento Duplicado: '+self.vetMed[self.nomeMedDuplicado][0].upper())
+            elif self.erroQuantidade != -1:
+                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+            elif self.erroQtdPrescrita != -1:
+                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
             else:
-                self.label_Erro.setText("Paciente não está cadastrado")
-        else:
-            self.label_Erro.setText("")
+                for i in range((len(self.vetMed))):
+                    saida.setQtdPrescrita(self.prescricao.getPrescricao()[i][2])
+                    if self.vetMed[i][2] != '':
+                        saida.setQtdSaida(self.vetMed[i][1])
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2] - int(self.vetMed[i][1]))
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                        item.setLote(self.vetMed[i][2])
+                        item.updateQtdItem(decremento)
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)
+                    else:
+                        saida.setQtdSaida(0)
+                        saida.setQtdRestante(self.prescricao.getPrescricao()[i][2])
+                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                        saida.setIdPaciente(self.prescricao.getPrescricao()[i][4])
+                        saida.setIdPrescricao(self.prescricao_id[i])
+                        print(self.prescricao.getPrescricao()[i][1])
+                        item.recuperaBDitem(self.prescricao.getPrescricao()[i][1])#recupera o item do banco pelo nome salvo na prescricao
+                        print(item.getItemID()[0][0])
+                        saida.setIdItem(item.getItemID()[0][0])#realiza um set na saida o item_id recuperado do banco
+                        saida.gravaBDsaida()
+                        self.pushButton_Retirar.setVisible(False)
+                        self.pushButton_RetirarRestante.setVisible(False)        
+
+                if saida.qtdRestante>0:
+                    naoRetirado = ''
+                    retirado = ''
+                    for i in range(len(self.vetMed)):
+                        if not self.vetMed[i][2] and self.vetMed[i][0]:
+                            print('não tem lote mas tem nome')
+                            naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
+                        if self.vetMed[i][2] and self.vetMed[i][0]:
+                            print('tem nome e tem lote')
+                            retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
+
+                    if naoRetirado and retirado:
+                        Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
+                        Mensagem.cor="black"
+                        Mensagem.img=2
+                        self.switch_window_2.emit()
+                        self.limparCampos()
+                        self.label_Erro.clear()
+                    elif naoRetirado and not retirado:
+                        self.label_Erro.setText('Digite os lotes para fazer a retirada')
+                else:
+                    if saida.qtdRestante==0:
+                        Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                        Mensagem.cor="black"
+                        Mensagem.img=1
+                        self.switch_window_2.emit()
+                        self.limparCampos()
+                        self.label_Erro.clear()
 
     def retirarRestante(self):
         self.nomeMedInvalido = -1
@@ -2577,138 +2575,123 @@ class BaixaItem(QtWidgets.QWidget):
         usuario = Usuario()
         saida = Saida()
         item = Item()
-        if paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            self.lerSeqCampos()
-            for indice in range(len(self.vetMed)):
-                if self.vetMed[indice][2] != '':
-                    if item.validaLoteNomeItem(self.vetMed[indice][0]):
-                        print("LOTE DIGITADO:"+self.vetMed[indice][2])
-                        if item.validaLoteNomeItem(self.vetMed[indice][2]):
-                            item.recuperaBDitem(self.vetMed[indice][2])
-                            if item.getDataVenc()[0][0] > date.today():
-                                decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
-                                if decremento >= 0:
-                                	if int(self.vetMed[indice][1]) <= self.saida.getSaida()[indice][3]:
-                                		print('Validação OK')
-                                	else:
-                                		self.erroQtdPrescrita = indice
+        self.lerSeqCampos()
+        for indice in range(len(self.vetMed)):
+            if self.vetMed[indice][2] != '':
+                if item.validaLoteNomeItem(self.vetMed[indice][0]):
+                    if item.validaLoteNomeItem(self.vetMed[indice][2]):
+                        item.recuperaBDitem(self.vetMed[indice][2])
+                        if item.getDataVenc()[0][0] > date.today():
+                            decremento = int(item.getQtdItem()[0][0]) - int(self.vetMed[indice][1])
+                            if decremento >= 0:
+                                if int(self.vetMed[indice][1]) <= self.saida.getSaida()[indice][3]:
+                                	print('Validação OK')
                                 else:
-                                    self.erroQuantidade = indice
+                                	self.erroQtdPrescrita = indice
                             else:
-                                self.medicamentoVencido = indice
+                                self.erroQuantidade = indice
                         else:
-                            self.loteInvalido = indice
+                            self.medicamentoVencido = indice
                     else:
-                        self.nomeMedInvalido = indice
-            if self.nomeMedInvalido != -1:
-                self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0].upper())
-            elif self.loteInvalido != -1:
-                self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
-            elif self.medicamentoVencido != -1:
-                self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
-            elif self.erroQuantidade != -1:
-                self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
-            elif self.erroQtdPrescrita != -1:
-                self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
-            else:
-                #Caso não existam erros de validação realiza-se a retirada
-                for i in range((len(self.vetMed))):
-                    saida.setQtdPrescrita(self.saida.getSaida()[i][1])
-                    print(self.vetMed[i][1])
-                    if self.vetMed[i][2]:
-                        saida.setQtdSaida(self.vetMed[i][1])
-                        saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
-                        decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
-                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                        saida.setIdPaciente(self.saida.getSaida()[i][8])
-                        item.setLote(self.vetMed[i][2])
-                        item.updateQtdItem(decremento)
-                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
-                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
-                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
-                        self.pushButton_Retirar.setVisible(False)
-                        self.pushButton_RetirarRestante.setVisible(False)
-                    else:
-                        saida.setQtdSaida(0)
-                        saida.setQtdRestante(self.vetMed[i][1])
-                        saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
-                        saida.setIdPaciente(self.saida.getSaida()[i][8])
-                        saida.setIdPrescricao(self.saida.getSaida()[i][7])
-                        saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
-                        saida.atualizaBDsaida(self.saida.getSaida()[i][0])
-                        self.pushButton_Retirar.setVisible(False)
-                        self.pushButton_RetirarRestante.setVisible(False)
-
-                if int(saida.qtdRestante)>0:
-                    naoRetirado = ''
-                    retirado = ''
-                    for i in range(len(self.vetMed)):
-                        if not self.vetMed[i][2] and self.vetMed[i][0]:
-                            naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
-                        if self.vetMed[i][2] and self.vetMed[i][0]:
-                            retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
-
-                    if naoRetirado and retirado:
-                        Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
-                        Mensagem.cor="black"
-                        Mensagem.img=2
-                        self.switch_window_2.emit()
-                        self.line_cpfPac.clear()
-                        self.line_nomeSobrenome.clear()
-                        self.line_nomeSobrenome.setVisible(False)
-                        self.limparCampos()
-                        self.label_Erro.clear()
-                        self.label_NomePac.setVisible(False)
-                    elif naoRetirado and not retirado:
-                        self.label_Erro.setText('Digite os lotes para fazer a retirada')
+                        self.loteInvalido = indice
                 else:
-                    if saida.qtdRestante==0:
-                        Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
-                        Mensagem.cor="black"
-                        Mensagem.img=1
-                        self.switch_window_2.emit()
-                        self.switch_window_2.emit()
-                        self.line_cpfPac.clear()
-                        self.line_nomeSobrenome.clear()
-                        self.line_nomeSobrenome.setVisible(False)
-                        self.limparCampos()
-                        self.label_Erro.clear()
-                        self.label_NomePac.setVisible(False)
-                
-
+                    self.nomeMedInvalido = indice
+        if self.nomeMedInvalido != -1:
+            self.label_Erro.setText('Nome Inválido: '+ self.vetMed[self.nomeMedInvalido][0].upper())
+        elif self.loteInvalido != -1:
+            self.label_Erro.setText('Lote Inválido: '+self.vetMed[self.loteInvalido][0].upper())
+        elif self.medicamentoVencido != -1:
+            self.label_Erro.setText('Medicamento vencido: '+self.vetMed[self.medicamentoVencido][0].upper())
+        elif self.erroQuantidade != -1:
+            self.label_Erro.setText('Quantidade digitada maior que a disponível: '+self.vetMed[self.erroQuantidade][0].upper())
+        elif self.erroQtdPrescrita != -1:
+            self.label_Erro.setText('Quantidade maior que a prescrita: '+self.vetMed[self.erroQtdPrescrita][0].upper())
         else:
-            self.label_Erro.setText("Paciente não está cadastrado!")
+            #Caso não existam erros de validação realiza-se a retirada
+            for i in range((len(self.vetMed))):
+                saida.setQtdPrescrita(self.saida.getSaida()[i][1])
+                print(self.vetMed[i][1])
+                if self.vetMed[i][2]:
+                    saida.setQtdSaida(self.vetMed[i][1])
+                    saida.setQtdRestante(self.saida.getSaida()[i][3] - int(self.vetMed[i][1]))
+                    decremento = item.getQtdItem()[0][0] - int(self.vetMed[i][1])
+                    saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                    saida.setIdPaciente(self.saida.getSaida()[i][8])
+                    item.setLote(self.vetMed[i][2])
+                    item.updateQtdItem(decremento)
+                    saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                    saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                    saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                    self.pushButton_Retirar.setVisible(False)
+                    self.pushButton_RetirarRestante.setVisible(False)
+                else:
+                    saida.setQtdSaida(0)
+                    saida.setQtdRestante(self.vetMed[i][1])
+                    saida.setIdUsuario(usuario.recuperaIDusuario(usuario.usuLogado))
+                    saida.setIdPaciente(self.saida.getSaida()[i][8])
+                    saida.setIdPrescricao(self.saida.getSaida()[i][7])
+                    saida.setIdItem(self.saida.getSaida()[i][9])#realiza um set na saida o item_id recuperado do banco
+                    saida.atualizaBDsaida(self.saida.getSaida()[i][0])
+                    self.pushButton_Retirar.setVisible(False)
+                    self.pushButton_RetirarRestante.setVisible(False)
+
+            if int(saida.qtdRestante)>0:
+                naoRetirado = ''
+                retirado = ''
+                for i in range(len(self.vetMed)):
+                    if not self.vetMed[i][2] and self.vetMed[i][0]:
+                        naoRetirado = naoRetirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos não retirados 
+                    if self.vetMed[i][2] and self.vetMed[i][0]:
+                        retirado = retirado + self.vetMed[i][0].title()+'\n'#lista os medicamentos retirados
+
+                if naoRetirado and retirado:
+                    Mensagem.msg="Atenção!\nBaixa Concluida!\nRetirado:\n"+retirado+"\nNão foi retirado:\n"+naoRetirado
+                    Mensagem.cor="black"
+                    Mensagem.img=2
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+                elif naoRetirado and not retirado:
+                    self.label_Erro.setText('Digite os lotes para fazer a retirada')
+            else:
+                if saida.qtdRestante==0:
+                    Mensagem.msg="Baixa Concluida!\nNão há mais medicamentos para retirar"
+                    Mensagem.cor="black"
+                    Mensagem.img=1
+                    self.switch_window_2.emit()
+                    self.switch_window_2.emit()
+                    self.limparCampos()
+                    self.label_Erro.clear()
+
+
 
     def buscarPrescricao(self):
-    	paciente = Paciente()
-    	self.saida = Saida()
-    	
-    	if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            #self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
-            #self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
-            self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title() + ' '+paciente.getPaciente()[0][2].title())
-            self.line_nomeSobrenome.setVisible(True)
-            self.label_NomePac.setVisible(True)
+        self.saida = Saida()
+        if self.comboBoxBusca.currentText() != 'Escolha a paciente':#Escolhe o nome da paciente
+            paciente = Paciente()
+            nome = self.comboBoxBusca.currentText().split()#Copia para a variavel nome o nome escolhido
+            sobrenome =''#variavel criada para receber o sobrenome
+            nome.pop(0)#deleta o primeiro nome
+            for i in range(len(nome)-1):#Laço até o penultimo nome
+                sobrenome = sobrenome + nome[i]+' '#junta até o penultimo nome e adiciona um espaço entre cada um
+            sobrenome = sobrenome + nome[len(nome)-1]#adiciona o ultimo nome sem espaço
+            paciente.recuperaBDpacienteSobrenome(sobrenome)#Recupera os dados da paciente pelo sobenome por questões de duplicidade de primeiro nome 
 
             if self.saida.existeSaida(paciente.getPaciente()[0][0]): #Compara se existe um retirada para este paciente_id hoje
-            	self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
-            	if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
-            		self.pushButton_Retirar.setVisible(False)
-            		self.pushButton_RetirarRestante.setVisible(True)
-            		self.preencheSaidaRestante(self.saida.getSaida())
-            	else:
-            		self.label_Erro.setText("Todas as baixas desta paciente já foram realizadas hoje!")
-            		self.limparCampos()
+                self.saida.recuperaBDsaida(paciente.getPaciente()[0][0])#Recupera todas as saidas para este paciente_id
+                if len(self.saida.getSaida())> 0: # verifica se existe alguma quantidade restante > 0
+                    self.pushButton_Retirar.setVisible(False)
+                    self.pushButton_RetirarRestante.setVisible(True)
+                    self.preencheSaidaRestante(self.saida.getSaida())
+                else:
+                    self.label_Erro.setText("Todas as baixas desta paciente já foram realizadas hoje!")
+                    self.limparCampos()
             else:
-            	self.pushButton_Retirar.setVisible(True)
-            	self.pushButton_RetirarRestante.setVisible(False)
-            	self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-            	self.prescricao.recuperaBDprescricao()
-            	self.preencheCampos(self.prescricao.getPrescricao())
-    	else:
-    		if self.line_cpfPac.text() != '':
-    			self.label_Erro.setText("Paciente não cadastrado")
+                self.pushButton_Retirar.setVisible(True)
+                self.pushButton_RetirarRestante.setVisible(False)
+                self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
+                self.prescricao.recuperaBDprescricao()
+                self.preencheCampos(self.prescricao.getPrescricao())
 
         
 #=======================================================================================================
@@ -2730,6 +2713,10 @@ class TelaPrescricao(QtWidgets.QWidget):
         Form.setFixedSize(582, 449)
         Form.setInputMethodHints(QtCore.Qt.ImhUppercaseOnly)
 
+        self.comboBoxBusca = QtWidgets.QComboBox(Form)
+        self.comboBoxBusca.setGeometry(QtCore.QRect(70,10,301,26))
+        self.comboBoxBusca.setObjectName("Combo Box Busca")
+
         self.fontLabel = QtGui.QFont()
         self.fontLabel.setFamily("Arial")
         self.fontLabel.setPointSize(10)
@@ -2747,8 +2734,8 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setObjectName("pushButton_MenuPrin")
 
         self.label_Paciente = QtWidgets.QLabel(Form)
-        self.label_Paciente.setGeometry(QtCore.QRect(35, 12, 30, 16))
-        self.label_Paciente.setObjectName("label_CPF")
+        self.label_Paciente.setGeometry(QtCore.QRect(15, 12, 43, 16))
+        self.label_Paciente.setObjectName("Paciente")
 
         self.pushButton_Salvar = QtWidgets.QPushButton(Form)
         self.pushButton_Salvar.setGeometry(QtCore.QRect(460, 180, 93, 28))
@@ -2815,6 +2802,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_cpfPac.setObjectName("line_cpfPac")
         self.line_cpfPac.setValidator(QtGui.QRegExpValidator(QtCore.QRegExp("[0-9]+"), self.line_cpfPac))
         self.line_cpfPac.setMaxLength(11)
+        self.line_cpfPac.setVisible(False)
 
         self.line_med1 = QtWidgets.QLineEdit(self.scrollAreaWidgetContents)
         self.line_med1.setFont(fontMed)
@@ -3201,6 +3189,13 @@ class TelaPrescricao(QtWidgets.QWidget):
         Form.setTabOrder(self.pushButton_Salvar, self.pushButton)
         Form.setTabOrder(self.pushButton, self.scrollArea)
 
+        paciente = Paciente()
+        paciente.recuperaBDpacienteSP()
+        dados = sorted(paciente.getPaciente(), key=itemgetter(1))
+        self.comboBoxBusca.addItem("Escolha a paciente")
+        for i in range(len(dados)):
+            self.comboBoxBusca.addItem(dados[i][1].title()+' '+dados[i][2].title())
+
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Prescrição - Cadastro e edição"))
@@ -3208,7 +3203,7 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.pushButton_MenuPrin.setToolTip(_translate("Form", "Abre janela do menu principal"))
         self.pushButton_MenuPrin.setText(_translate("Form", "Menu principal"))
         self.pushButton_MenuPrin.setShortcut(_translate("Form", "Ctrl+M"))
-        self.label_Paciente.setText(_translate("Form", "CPF: "))
+        self.label_Paciente.setText(_translate("Form", "Paciente: "))
         self.line_cpfPac.setToolTip(_translate("Form", "Digite o cpf da paciente"))
         self.label_NomePac.setText(_translate("Form", "Nome: "))
         self.pushButton_Salvar.setToolTip(_translate("Form", "Salva a prescrição do paciente"))
@@ -3318,11 +3313,6 @@ class TelaPrescricao(QtWidgets.QWidget):
         self.line_cpfPac.copy()
 
     def limparCampos(self):
-        self.label_TituloNomePac.setVisible(False)
-        self.label_NomePac.clear()
-        self.label_NomePac.setVisible(False)
-        self.label_SobrenomePac.clear()
-        self.label_SobrenomePac.setVisible(False)
         self.line_cpfPac.clear()
         self.line_med1_15.clear()
         self.line_med1_14.clear()
@@ -3686,26 +3676,21 @@ class TelaPrescricao(QtWidgets.QWidget):
     		self.label_Erro.setText("Paciente não está cadastrado!")
 
     def buscarPrescricao(self):
-        paciente = Paciente()
-        if self.line_cpfPac.text() != '' and paciente.validaCPFpaciente(self.line_cpfPac.text()):
-            paciente.recuperaBDpaciente(self.line_cpfPac.text())
-            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])
-            self.prescricao.recuperaBDprescricao()
-            self.preencheCampos(self.prescricao.getPrescricao())
+        if self.comboBoxBusca.currentText() != 'Escolha a paciente':#Escolhe o nome da paciente
+            paciente = Paciente()#instancia a classe paciente
+            nome = self.comboBoxBusca.currentText().split()#Copia para a variavel nome o nome escolhido
+            sobrenome =''#variavel criada para receber o sobrenome
+            nome.pop(0)#deleta o primeiro nome
+            for i in range(len(nome)-1):#Laço até o penultimo nome
+                sobrenome = sobrenome + nome[i]+' '#junta até o penultimo nome e adiciona um espaço entre cada um
+            sobrenome = sobrenome + nome[len(nome)-1]#adiciona o ultimo nome sem espaço
 
-            self.line_nomeSobrenome.setText(paciente.getPaciente()[0][1].title()+' '+paciente.getPaciente()[0][2].title())
-            self.line_nomeSobrenome.setVisible(True)
-            self.label_NomePac.setVisible(True)
-
-            self.label_NomePac.setVisible(True)
-            self.label_SobrenomePac.setVisible(True)
-            self.label_NomePac.setText(paciente.getPaciente()[0][1].title())
-            self.label_SobrenomePac.setText(paciente.getPaciente()[0][2].title())
-        elif self.line_cpfPac.text() != '':
-            self.line_nomeSobrenome.setVisible(False)
-            self.label_NomePac.setVisible(False)
-            self.label_Erro.setText("Paciente não cadastrado")
-
+            paciente.recuperaBDpacienteSobrenome(sobrenome)#Recupera os dados da paciente pelo sobenome por questões de duplicidade de primeiro nome 
+            self.prescricao.setIdPaciente(paciente.getPaciente()[0][0])#passa o id da paciente para a classe prescrição
+            self.prescricao.recuperaBDprescricao()#recupera do banco com o id passado anteriormente
+            self.preencheCampos(self.prescricao.getPrescricao())#preenche os campos com os dados da prescrição caso existam
+        else:
+            self.limparCampos()
       
 
 #===========================================================================================================================
@@ -5878,7 +5863,7 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
         self.setupUi(self)
         self.pushButton_4.clicked.connect(self.TelaMenuPrincipal)
         self.item = Item()
-        self.buscarItem1()
+        self.buscarItem()
 
 
     def limparTela(self):
@@ -5888,7 +5873,7 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
     def TelaMenuPrincipal(self):
         self.switch_window.emit()
 
-    def buscarItem1(self):
+    def buscarItem(self):
         self.item.recuperaItemBDSP()
         self.preencheTabela()
         self.tabela.setHorizontalHeaderLabels(["ID", "Nome","Lote","Qtd", "Qtd Minima", "Data vencimento", "Dose", "Unidade", "Fabricante", "Fornecedor"])
@@ -5896,17 +5881,18 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
     def preencheTabela(self):
         dados = self.item.recuperaItemBDSP()
         dados = sorted(dados, key=itemgetter(1))
+
         self.tabela.setRowCount(0)
         for num_linha, linha_dado in enumerate(dados):
             self.tabela.insertRow(num_linha)
             for num_coluna, dado in enumerate(linha_dado):
                 self.tabela.setItem(num_linha, num_coluna, self.formatCell(str(dado).title()))#Usando função upper() para deixar a tabela maiuscula
                 if num_coluna == 1 or num_coluna == 8 or num_coluna == 9:
-                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).title()))
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).title()))
                 if num_coluna == 7:
-                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).lower()))
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(str(dado).lower()))
                 if num_coluna == 5:
-                	self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(dado.strftime('%d/%m/%Y')))
+                    self.tabela.setItem(num_linha, num_coluna, self.formatCellNomeItem(dado.strftime('%d/%m/%Y')))
 
         self.tabela.setHorizontalHeaderLabels(["ID","Nome","Lote", "Quantidade", "QtdMinima","Vencimento","Dose", "Unid","Fabricante", "Fornecedor"])#Define os Cabeçalhos das colunas
         self.tabela.resizeColumnsToContents()
@@ -5917,7 +5903,7 @@ class VisualizarEstoque(QtWidgets.QWidget, Ui_Form_VisualizaEst):
 
         dadosDOC = ""
         for num in dados:
-            dadosDOC += "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(num[1].title(),num[2],num[3],num[4],num[5].strftime('%d/%m/%Y'),num[6],num[7],num[8].title(),num[9].title())
+            dadosDOC += "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(num[1].title(),num[2],num[3],num[4],num[5].strftime('%d/%m/%Y'),num[6],num[7],str(num[8]).title(),str(num[9]).title())
         
         reporteHtml = """
 <!DOCTYPE html>
@@ -5959,18 +5945,18 @@ tr:nth-child(even) {
 <h2>Ponta Grossa - """+date.today().strftime("%d/%m/%Y")+"""<br/></h2>
 <h2 align="center">Relação de Itens em Estoque<br/></h2>
 <table align="left" width="100%" cellspacing="0">
-  <tr>
-    <th>NOME</th>
-    <th>LOTE</th>
-    <th>QUANTIDADE</th>
-    <th>QTD. MINIMA</th>
-    <th>VENCIMENTO</th>
-    <th>DOSE</th>
-    <th>UNID.</th>
-    <th>FABRICANTE</th>
-    <th>FORNECEDOR</th>
-  </tr>
-  [DADOS]
+      <tr>
+        <th>NOME</th>
+        <th>LOTE</th>
+        <th>QUANTIDADE</th>
+        <th>QTD. MINIMA</th>
+        <th>VENCIMENTO</th>
+        <th>DOSE</th>
+        <th>UNID.</th>
+        <th>FABRICANTE</th>
+        <th>FORNECEDOR</th>
+      </tr>
+      [DADOS]
 </table>
 </body>
 </html>

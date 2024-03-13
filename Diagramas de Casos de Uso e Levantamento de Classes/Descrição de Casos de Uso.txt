@@ -1,0 +1,197 @@
+
+Nome:	Manter Usuario
+Objetivo:	Permitir ao administrador que cadastre, consulte, atualize e exclua usuários do sistema.
+Requisitos:	Controle de acesso
+Atores:	Usuario e BD
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador
+Frequência de uso:	A cada acesso
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Manter Usuario
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Cadastrar Usuário;
+- Buscar Usuário;
+- Atualizar Usuário;
+- Excluir Usuário;
+2. Administrador clica na opção Cadastrar Usuário;
+3. Sistema apresenta caixas de preenchimento:
+-Nome (campo editável);
+-Senha (campo editável);
+4. Sistema apresenta botão de confirmação.
+5. Administrador clica no botão de confirmação.
+6. Sistema grava novo usuário e mostra mensagem de confirmação.
+Quadro 4 - Especificação do caso de uso manter arquivo
+
+
+
+Nome:	Manter Paciente
+Objetivo:	Permitir ao administrador ou usuário que cadastre, consulte, atualize ou exclua pacientes do sistema.
+Requisitos:	Pertencer à instituição proprietária do sistema.
+Atores:	Usuario e BD.
+Prioridade:	Normal
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Baixa
+Criticalidade:	Normal
+Condição de entrada:	O administrador escolhe a opção Manter Paciente.
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Cadastrar paciente;
+- Buscar paciente;
+- Atualizar paciente;
+- Excluir paciente;
+2. Usuário clica na opção Cadastrar Paciente;
+3. Sistema apresenta caixas de preenchimento:
+- Nome (campo editável);
+- CPF (campo editável);
+- RG (campo editável);
+- Data de Nascimento (campo editável);
+4. Sistema apresenta botão de confirmação.
+5. Usuário clica no botão de confirmação.
+6. Sistema grava novo paciente e mostra mensagem de confirmação.
+Quadro 5 - Especificação do caso de uso Manter Paciente
+Nome:	Manter Item
+Objetivo:	Permitir ao administrador ou usuário que cadastre, consulte, atualize ou exclua itens do sistema.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Alta
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Manter Item.
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Cadastrar Item;
+- Buscar Item;
+- Atualizar Item;
+- Excluir Item;
+2. Usuário clica na opção Cadastrar Item;
+3. Sistema apresenta caixas de preenchimento:
+- Nome (campo editável);
+- Tipo (campo editável);
+- Qtd. Mínima (campo editável);
+- Qtd. Item (campo editável);
+- Lote (campo editável);
+- Data de Vencimento (campo editável);
+- Peso;
+4. Sistema apresenta botão de confirmação.
+5. Usuário clica no botão de confirmação.
+6. Sistema grava novo Item e mostra mensagem de confirmação.
+Quadro 6 - Especificação do caso de uso Manter Item
+
+
+Nome:	Manter Fornecedor
+Objetivo:	Permitir ao administrador  ou usuário fazer a retirada ou exclusão de fornecedores do sistema.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Normal
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Manter Fornecedor
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Cadastrar fornecedor;
+- Buscar fornecedor;
+- Atualizar fornecedor;
+- Excluir fornecedor;
+2. Usuário clica na opção Cadastrar Fornecedor;
+3. Sistema apresenta caixas de preenchimento:
+- Nome (campo editável);
+- CNPJ (campo editável);
+- Telefone (campo editável);
+- Endereço (campo editável);
+4. Usuário clica no botão de confirmação.
+5. Sistema grava novo fornecedor e mostra mensagem de confirmação.
+Quadro 7 - Especificação do caso de uso Manter fornecedor
+
+Nome:	Manter Prescrição
+Objetivo:	Permitir ao administrador ou usuário montar a prescrição do paciente.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Normal
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Manter Prescrição
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Cadastrar Prescrição;
+- Buscar prescrição;
+- Atualizar prescrição;
+- Excluir prescrição;
+2. Usuário clica na opção Cadastrar Prescrição;
+3. Sistema apresenta caixasde texto e combo box de preenchimento e seleção respectivamente:
+- Paciente (combo box);
+- Item (combo box e campo editável);
+- Qtd por dose (campo editável);
+- Período receitado (campo editável);
+4. Usuário clica no botão de confirmação.
+5. Sistema grava nova prescrição e mostra mensagem de confirmação.
+Quadro 8 - Especificação do caso de uso Manter prescrição
+
+Nome:	Armazenar Item
+Objetivo:	Permitir ao administrador ou usuário realizar o armazenamento de itens no sistema.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Alta
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Armazenar Item
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Armazenar Item;
+2. Usuário clica na opção Armazenar Item;
+3. Sistema apresenta caixas editáveis e combo box:
+- Item (combo box e campo editável);
+- Fornecedor (combo box e campo editável);
+- Qtd (campo editável);
+- Data (Calendário para escolha da data);
+4. Usuário clica no botão de confirmação.
+5. Sistema grava nova entrada e mostra mensagem de confirmação.
+Quadro 9 - Especificação do caso de uso Armazenar Item
+
+
+Nome:	Retirar Item
+Objetivo:	Permitir ao administrador ou usuário fazer a retirada ou exclusão de itens do sistema.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador ou usuário.
+Frequência de uso:	Alta
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Retirar Item.
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Direcionar Paciente;
+- Excluir Item;
+2. Usuário clica na opção Direcionar Paciente ou Desprezar;
+3. Sistema apresenta caixas de preenchimento ou combo box:
+- Paciente (campo editável ou combo box);
+- Qtd. (campo editável)
+- Lote (campo editável ou combo box);
+4. Sistema apresenta botão de confirmação.
+5. Usuário clica no botão de confirmação.
+6. Sistema altera QtdItem de Manter Item, grava e mostra mensagem de confirmação.
+Quadro 10 - Especificação do caso de uso Retirar Item
+
+
+
+
+Nome:	Imprimir Relatorio
+Objetivo:	Permitir ao administrador realizar a impressão da relação de ações realizadas no sistema.
+Requisitos:	-
+Atores:	Usuario e BD.
+Prioridade:	Alta
+Pré-Condições:	Possuir nome e senha de administrador.
+Frequência de uso:	Alta
+Criticalidade:	Alta
+Condição de entrada:	O administrador escolhe a opção Imprimir Relatorio.
+Fluxo principal:	1. Sistema apresenta botões de acesso:
+- Imprimir Entradas
+- Imprimir Saídas
+2. Administrador clica na opção;
+3. Sistema apresenta caixas de preenchimento de acordo com a opção.
+Opção Imprimir Entradas:
+- Data (campo editável)
+Opção Imprimir Saídas:
+-Data (campo editável)
+4. Sistema apresenta botão de confirmação.
+5. Administrador clica no botão de confirmação.
+6. Sistema verifica ação do administrador, gera arquivo de texto com as informações solicitadas e abre o arquivo.
+Quadro11 - Especificação do caso de uso Imprimir Relatório
+
